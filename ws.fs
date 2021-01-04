@@ -102,8 +102,8 @@ module WebSocketServer =
       try
       while not ct.IsCancellationRequested do
           let bytes = Array.create tcp.ReceiveBufferSize (byte 0)
-          let! msg = ns.ReadAsync (bytes, 0, bytes.Length) |> Async.AwaitTask
-          printfn "HANDLE MSG %A" msg
+          let! len = ns.ReadAsync (bytes, 0, bytes.Length) |> Async.AwaitTask
+          printfn "HANDLE FRAME %A" bytes.[1..len]
           do! writeTime ns (Time.New(DateTime.Now))
           return! runLoop ns inbox ct tcp ctrl
       finally
