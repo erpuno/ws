@@ -18,8 +18,8 @@ module ServerUtil =
 
     let getKey (key: String) arr =
         try
-            (Array.find (fun (s: String) -> s.StartsWith(key)) arr).[key.Length
-                                                                     + 1..]
+            let f (s: String) = s.StartsWith(key)
+            (Array.find f arr).[key.Length + 1..]
         with _ -> ""
 
     let isWebSocketsUpgrade (lines: string array) =
@@ -49,11 +49,11 @@ module ServerUtil =
         |> Convert.ToBase64String
 
     let createAcceptString6455 acceptCode =
-        line "HTTP/1.1 101 Switching Protocols"
-        + line "Upgrade: websocket"
-        + line "Connection: Upgrade"
-        + line ("Sec-WebSocket-Accept: " + acceptCode)
-        + line ""
+        line "HTTP/1.1 101 Switching Protocols" +
+        line "Upgrade: websocket" +
+        line "Connection: Upgrade" +
+        line ("Sec-WebSocket-Accept: " + acceptCode) +
+        line ""
 
     let wsResponse lines =
         (match lines with
@@ -87,7 +87,8 @@ type Time =
       [<DataMember(Name = "minute")>]
       mutable Minute: int
       [<DataMember(Name = "second")>]
-      mutable Second: int }
+      mutable Second: int
+    }
     static member New(dt: DateTime) =
         { Hour = dt.Hour
           Minute = dt.Minute
@@ -135,16 +136,15 @@ module WebSocketServer =
         }
 
     let runLoop (ns: NetworkStream)
+                (size: int)
                 (inbox: MailboxProcessor<Time>)
                 (ct: CancellationToken)
-                (tcp: TcpClient)
                 (ctrl: MailboxProcessor<Msg>)
                 =
         async {
             try
                 while not ct.IsCancellationRequested do
-                    let bytes =
-                        Array.create tcp.ReceiveBufferSize (byte 0)
+                    let bytes = Array.create size (byte 0)
 
                     let ws =
                         WebSocket.CreateFromStream
@@ -174,9 +174,12 @@ module WebSocketServer =
         }
 
 
-    let heartbeat (ctrl: MailboxProcessor<Msg>) (interval: int) =
+    let heartbeat (interval: int)
+                  (ct: CancellationToken)
+                  (ctrl: MailboxProcessor<Msg>)
+                  =
         async {
-            while true do
+            while not ct.IsCancellationRequested do
                 do! Async.Sleep interval
                 ctrl.Post(Tick <| Time.New(DateTime.Now))
         }
@@ -199,13 +202,17 @@ module WebSocketServer =
                     | Tick msg -> listeners.ForEach(fun l -> l.Post msg)
             })
 
-    let runWorkers (tcp: TcpClient) (ctrl: MailboxProcessor<Msg>) ct =
+    let runWorkers (tcp:TcpClient)
+                   (ctrl: MailboxProcessor<Msg>)
+                   (ct: CancellationToken)
+                   =
         startMailboxProcessor ct (fun (inbox: MailboxProcessor<Time>) ->
             async {
                 let ns = tcp.GetStream()
 
-                let bytes =
-                    Array.create tcp.ReceiveBufferSize (byte 0)
+                let size = tcp.ReceiveBufferSize
+
+                let bytes = Array.create size (byte 0)
 
                 let! len =
                     ns.ReadAsync(bytes, 0, bytes.Length)
@@ -216,24 +223,23 @@ module WebSocketServer =
                     do! ns.AsyncWrite upgrade
                     ctrl.Post(Connect(inbox, ns))
                     Async.Start(runTelemetry ns inbox ct ctrl, ct)
-                    Async.Start(runLoop ns inbox ct tcp ctrl, ct)
+                    Async.Start(runLoop ns size inbox ct ctrl, ct)
                 | _ -> tcp.Close()
             })
 
-    let acceptLoop (controller: MailboxProcessor<Msg>)
-                   (listener: TcpListener)
-                   (cts: CancellationToken)
+    let acceptLoop (listener: TcpListener)
+                   (ct: CancellationToken)
+                   (ctrl: MailboxProcessor<Msg>)
                    =
         async {
             try
-                while not cts.IsCancellationRequested do
-                    let! client =
-                        Async.FromBeginEnd
-                            (listener.BeginAcceptTcpClient,
-                             listener.EndAcceptTcpClient)
+                let! client =
+                     Async.FromBeginEnd
+                         (listener.BeginAcceptTcpClient,
+                         listener.EndAcceptTcpClient)
 
-                    client.NoDelay <- true
-                    runWorkers client controller cts |> ignore
+                client.NoDelay <- true
+                runWorkers client ctrl ct |> ignore
             finally
                 listener.Stop()
         }
@@ -251,10 +257,11 @@ module WebSocketServer =
         with
         | :? SocketException ->
             failwithf "ERROR: %s/%i is using by another program" ipAddress port
-        | err -> failwithf "ERROR: %s" err.Message
+        | err ->
+            failwithf "ERROR: %s" err.Message
 
-        Async.Start(acceptLoop controller listener token, token)
-        Async.Start(heartbeat controller 1000, token)
+        Async.Start(acceptLoop listener token controller, token)
+        Async.Start(heartbeat 1000 token controller, token)
 
         { new IDisposable with
             member x.Dispose() = cts.Cancel() }
