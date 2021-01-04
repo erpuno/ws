@@ -13,10 +13,22 @@ module ServerUtil =
 
   let guid6455 = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
+  let getKey (key:String) arr =
+      try let item = (Array.find (fun (s:String) -> s.StartsWith(key)) arr)
+          item.Substring key.Length
+      with | _ -> ""
+
   let isWebSocketsUpgrade (lines: string array) =
       [| "GET /timer HTTP/1.1"; "Upgrade: websocket"; "Connection: Upgrade"|]
       |> Array.map(fun x->lines |> Array.exists(fun y->x.ToLower()=y.ToLower()))
       |> Array.reduce(fun x y->x && y)
+
+  let getLines (bytes:Byte[]) len =
+      if len > 8 then
+          bytes.[..(len-9)] |> System.Text.UTF8Encoding.UTF8.GetString
+                            |> fun hs->hs.Split([|"\r\n"|], StringSplitOptions.RemoveEmptyEntries)
+      else
+          [||]
 
   let calcWSAccept6455 (secWebSocketKey:string) =
       let ck = secWebSocketKey + guid6455
@@ -31,14 +43,12 @@ module ServerUtil =
       "Connection: Upgrade\r\n" +
       "Sec-WebSocket-Accept: " + acceptCode + "\r\n" + "\r\n"
 
-  let getKey (key:String) arr =
-      try let item = (Array.find (fun (s:String) -> s.StartsWith(key)) arr)
-          item.Substring key.Length
-      with | _ -> ""
-
   let wsResponse lines =
       (getKey "Sec-WebSocket-Key:" lines).Substring(1)
       |> calcWSAccept6455 |> createAcceptString6455 |> Encoding.ASCII.GetBytes
+
+  let webSocket (lines: string array) =
+      (isWebSocketsUpgrade lines, wsResponse lines)
 
   let makeFrame_ShortTxt (P:byte array) =
       let message = new MemoryStream()
@@ -129,23 +139,16 @@ module WebSocketServer =
   let runWorkers (tcp: TcpClient) (ctrl: MailboxProcessor<Msg>) ct =
       startMailboxProcessor ct (fun (inbox: MailboxProcessor<Time>) ->
           async {
-              let ns = tcp.GetStream()
+              let ns    = tcp.GetStream()
               let bytes = Array.create tcp.ReceiveBufferSize (byte 0)
-              let! len = ns.ReadAsync (bytes, 0, bytes.Length) |> Async.AwaitTask
-              if len > 8 then
-                  let lines = bytes.[..(len-9)]
-                              |> System.Text.UTF8Encoding.UTF8.GetString
-                              |> fun hs->hs.Split([|"\r\n"|], StringSplitOptions.RemoveEmptyEntries)
-                  match isWebSocketsUpgrade lines with
-                  | true ->
-                      do! ns.AsyncWrite (wsResponse lines)
-                      ctrl.Post(Connect (inbox,ns))
-                      Async.Start(runTelemetry ns inbox ct ctrl, ct)
-                      Async.Start(runLoop ns inbox ct tcp ctrl, ct)
-//                    return! runLoop ns inbox ct tcp ctrl
-                  | _ ->
-                      tcp.Close()
-              else
+              let! len  = ns.ReadAsync (bytes, 0, bytes.Length) |> Async.AwaitTask
+              match webSocket (getLines bytes len) with
+              | (true,response) ->
+                  do! ns.AsyncWrite response
+                  ctrl.Post(Connect (inbox,ns))
+                  Async.Start(runTelemetry ns inbox ct ctrl, ct)
+                  Async.Start(runLoop ns inbox ct tcp ctrl, ct)
+              | _ ->
                   tcp.Close()
           }
      )
