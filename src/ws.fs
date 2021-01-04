@@ -107,7 +107,9 @@ module WebSocketServer =
     let startMailboxProcessor ct f =
         MailboxProcessor.Start(f, cancellationToken = ct)
 
-    let writeTime (ns: NetworkStream) (time: Time) =
+    let writeTime (ns: NetworkStream)
+                  (time: Time)
+                  =
         async {
             let json =
                 System.Runtime.Serialization.Json.DataContractJsonSerializer
@@ -158,13 +160,15 @@ module WebSocketServer =
 
                     let _ =
                         match (int result.MessageType) with
-                        | 2 -> printfn "HANDLE CLOSE"
-                        | 1 -> printfn "HANDLE BINARY %A" bytes.[0..len]
+                        | 2 ->
+                            printfn "HANDLE CLOSE"
+                        | 1 ->
+                            printfn "HANDLE BINARY %A" bytes.[0..len]
                         | 0 ->
-                            printfn
-                                "HANDLE TEXT %s"
-                                (BitConverter.ToString(bytes.[0..len]))
-                        | x -> printfn "HANDLE %A" x
+                            let text = BitConverter.ToString(bytes.[0..len])
+                            printfn "HANDLE TEXT %s" text
+                        | x ->
+                            printfn "HANDLE %A" x
 
                     do! writeTime ns (Time.New(DateTime.Now))
             finally
@@ -202,18 +206,15 @@ module WebSocketServer =
                     | Tick msg -> listeners.ForEach(fun l -> l.Post msg)
             })
 
-    let runWorkers (tcp:TcpClient)
+    let runWorkers (tcp: TcpClient)
                    (ctrl: MailboxProcessor<Msg>)
                    (ct: CancellationToken)
                    =
         startMailboxProcessor ct (fun (inbox: MailboxProcessor<Time>) ->
             async {
                 let ns = tcp.GetStream()
-
                 let size = tcp.ReceiveBufferSize
-
                 let bytes = Array.create size (byte 0)
-
                 let! len =
                     ns.ReadAsync(bytes, 0, bytes.Length)
                     |> Async.AwaitTask
@@ -248,9 +249,7 @@ module WebSocketServer =
         let cts = new CancellationTokenSource()
         let token = cts.Token
         let controller = runController token
-
-        let listener =
-            TcpListener(IPAddress.Parse(ipAddress), port)
+        let listener = TcpListener(IPAddress.Parse(ipAddress), port)
 
         try
             listener.Start(10)
