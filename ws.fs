@@ -76,7 +76,7 @@ module WebSocketServer =
       do! ns.AsyncWrite(df,0,df.Length)
       }
 
-  let run (ns: NetworkStream)
+  let runTelemetry (ns: NetworkStream)
           (inbox: MailboxProcessor<Time>)
           (ct: CancellationToken)
           (ctrl: MailboxProcessor<Msg>) = async {
@@ -110,7 +110,7 @@ module WebSocketServer =
       }
 
 
-  let timer (ctrl: MailboxProcessor<Msg>) (interval:int) = async {
+  let heartbeat (ctrl: MailboxProcessor<Msg>) (interval:int) = async {
       while true do
           do! Async.Sleep interval
           ctrl.Post(Tick <| Time.New(DateTime.Now))
@@ -151,7 +151,7 @@ module WebSocketServer =
                                       |> createAcceptString6455
                       do! ns.AsyncWrite <| Encoding.ASCII.GetBytes acceptStr
                       ctrl.Post(Connect (inbox,ns))
-                      Async.Start(run ns inbox ct ctrl, ct)
+                      Async.Start(runTelemetry ns inbox ct ctrl, ct)
                       Async.Start(runLoop ns inbox ct tcp ctrl, ct)
 //                    return! runLoop ns inbox ct tcp ctrl
                   | _ ->
@@ -161,9 +161,8 @@ module WebSocketServer =
           }
      )
 
-  let main (controller : MailboxProcessor<Msg>)
-           (listener:TcpListener)
-           (cts:CancellationToken) = async {
+  let acceptLoop (controller: MailboxProcessor<Msg>)
+      (listener: TcpListener) (cts: CancellationToken) = async {
       try
           listener.Start(10)
           while not cts.IsCancellationRequested do
@@ -179,8 +178,8 @@ module WebSocketServer =
       let cts = new CancellationTokenSource()
       let token = cts.Token
       let controller = runController token
-      Async.Start(main controller listener token, token)
-      Async.Start(timer controller 1000, token)
+      Async.Start(acceptLoop controller listener token, token)
+      Async.Start(heartbeat controller 1000, token)
       { new IDisposable with member x.Dispose() = cts.Cancel()}
 
   let start() =
