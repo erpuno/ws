@@ -78,8 +78,7 @@ module WebSocketServer =
 
   let runTelemetry (ns: NetworkStream) (inbox: MailboxProcessor<Time>)
       (ct: CancellationToken) (ctrl: MailboxProcessor<Msg>) = async {
-      try
-      while not ct.IsCancellationRequested do
+      try while not ct.IsCancellationRequested do
           let! time = inbox.Receive()
           do! writeTime ns (Time.New(DateTime.Now))
       finally
@@ -90,8 +89,7 @@ module WebSocketServer =
 
   let runLoop (ns: NetworkStream) (inbox: MailboxProcessor<Time>)
       (ct: CancellationToken) (tcp: TcpClient) (ctrl: MailboxProcessor<Msg>) = async {
-      try
-      while not ct.IsCancellationRequested do
+      try while not ct.IsCancellationRequested do
           let bytes = Array.create tcp.ReceiveBufferSize (byte 0)
           let! len = ns.ReadAsync (bytes, 0, bytes.Length) |> Async.AwaitTask
           printfn "HANDLE FRAME %A" bytes.[1..len]
