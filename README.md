@@ -12,4 +12,5 @@ $ wscat -c ws://localhost:1900/timer
 Credits
 -------
 
+* Igor Gorodetsky
 * Maxim Sokhatsky
