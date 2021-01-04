@@ -76,7 +76,7 @@ module WebSocketServer =
       let payload = new MemoryStream()
       json.WriteObject(payload, time)
       let df = makeFrame_ShortTxt <| payload.ToArray()
-      ns.Write(df,0,df.Length)
+      do! ns.AsyncWrite(df,0,df.Length)
       }
 
   let run (ns : NetworkStream)
@@ -154,7 +154,7 @@ module WebSocketServer =
                       do! ns.AsyncWrite <| Encoding.ASCII.GetBytes acceptStr
                       ctrl.Post(Connect (inbox,ns))
                       Async.Start(run ns inbox ct ctrl, ct)
-//                      Async.Start(runLoop ns inbox ct tcp ctrl, ct)
+//                    Async.Start(runLoop ns inbox ct tcp ctrl, ct)
                       return! runLoop ns inbox ct tcp ctrl
                   | _ ->
                       tcp.Close()
