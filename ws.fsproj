@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="5.0.0" />
     <PackageReference Include="FSharp.Data" Version="3.3.3" />
-    <Compile Include="ws.fs" />
+    <Compile Include="src/*.fs" />
   </ItemGroup>
 
 </Project>
