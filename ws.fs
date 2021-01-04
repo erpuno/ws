@@ -69,7 +69,7 @@ module WebSocketServer =
   let origin = "ws://localhost"
   let startMailboxProcessor ct f = MailboxProcessor.Start(f, cancellationToken = ct)
 
-  let writeTime (ns : NetworkStream) (time:Time) = async {
+  let writeTime (ns: NetworkStream) (time: Time) = async {
       let json = System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof<Time>)
       let payload = new MemoryStream()
       json.WriteObject(payload, time)
@@ -77,10 +77,10 @@ module WebSocketServer =
       do! ns.AsyncWrite(df,0,df.Length)
       }
 
-  let run (ns : NetworkStream)
-          (inbox:MailboxProcessor<Time>)
-          (ct:CancellationToken)
-          (ctrl : MailboxProcessor<Msg>) = async {
+  let run (ns: NetworkStream)
+          (inbox: MailboxProcessor<Time>)
+          (ct: CancellationToken)
+          (ctrl: MailboxProcessor<Msg>) = async {
       try
       while not ct.IsCancellationRequested do
           let! time = inbox.Receive()
@@ -92,11 +92,11 @@ module WebSocketServer =
       }
 
   let rec runLoop
-      (ns : NetworkStream)
-      (inbox:MailboxProcessor<Time>)
-      (ct:CancellationToken)
-      (tcp:TcpClient)
-      (ctrl : MailboxProcessor<Msg>) = async {
+      (ns: NetworkStream)
+      (inbox: MailboxProcessor<Time>)
+      (ct: CancellationToken)
+      (tcp: TcpClient)
+      (ctrl: MailboxProcessor<Msg>) = async {
       try
       while not ct.IsCancellationRequested do
           let bytes = Array.create tcp.ReceiveBufferSize (byte 0)
@@ -111,14 +111,14 @@ module WebSocketServer =
       }
 
 
-  let timer (ctrl : MailboxProcessor<Msg>) (interval:int) = async {
+  let timer (ctrl: MailboxProcessor<Msg>) (interval:int) = async {
       while true do
           do! Async.Sleep interval
           ctrl.Post(Tick <| Time.New(DateTime.Now))
       }
 
-  let runController (ct : CancellationToken) =
-      startMailboxProcessor ct (fun (inbox : MailboxProcessor<Msg>) ->
+  let runController (ct: CancellationToken) =
+      startMailboxProcessor ct (fun (inbox: MailboxProcessor<Msg>) ->
           let listeners = new ResizeArray<_>()
           async {
               while not ct.IsCancellationRequested do
@@ -135,9 +135,9 @@ module WebSocketServer =
           }
       )
 
-  let runWorker (tcp : TcpClient) (ctrl : MailboxProcessor<Msg>) ct =
-      ignore <| startMailboxProcessor ct (fun (inbox : MailboxProcessor<Time>) ->
-          let rec handshake = async {
+  let runWorkers (tcp: TcpClient) (ctrl: MailboxProcessor<Msg>) ct =
+      startMailboxProcessor ct (fun (inbox: MailboxProcessor<Time>) ->
+          async {
               let ns = tcp.GetStream()
               let bytes = Array.create tcp.ReceiveBufferSize (byte 0)
               let bytesReadCount = ns.Read (bytes, 0, bytes.Length)
@@ -154,24 +154,24 @@ module WebSocketServer =
                       do! ns.AsyncWrite <| Encoding.ASCII.GetBytes acceptStr
                       ctrl.Post(Connect (inbox,ns))
                       Async.Start(run ns inbox ct ctrl, ct)
-//                    Async.Start(runLoop ns inbox ct tcp ctrl, ct)
-                      return! runLoop ns inbox ct tcp ctrl
+                      Async.Start(runLoop ns inbox ct tcp ctrl, ct)
+//                    return! runLoop ns inbox ct tcp ctrl
                   | _ ->
                       tcp.Close()
               else
                   tcp.Close()
-              }
-          handshake
+          }
      )
 
   let main (controller : MailboxProcessor<Msg>)
-           (listener:TcpListener) (cts:CancellationToken)  = async {
+           (listener:TcpListener)
+           (cts:CancellationToken) = async {
       try
           listener.Start(10)
           while not cts.IsCancellationRequested do
               let! client = Async.FromBeginEnd(listener.BeginAcceptTcpClient, listener.EndAcceptTcpClient)
               client.NoDelay <- true
-              runWorker client controller cts
+              runWorkers client controller cts |> ignore
       finally
           listener.Stop()
       }
@@ -182,14 +182,14 @@ module WebSocketServer =
       let token = cts.Token
       let controller = runController token
       Async.Start(main controller listener token, token)
-      Async.Start (timer controller 1000, token)
+      Async.Start(timer controller 1000, token)
       { new IDisposable with member x.Dispose() = cts.Cancel()}
 
   let start() =
-    let dispose = runRequestDispatcher ()
-    printfn "press any key to stop..."
-    Console.ReadKey() |> ignore
-    dispose.Dispose()
+      let dispose = runRequestDispatcher ()
+      printfn "press any key to stop..."
+      Console.ReadKey() |> ignore
+      dispose.Dispose()
 
 module Program =
 
