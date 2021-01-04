@@ -14,39 +14,40 @@ module ServerUtil =
   let guid6455 = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
   let isWebSocketsUpgrade (lines: string array) =
-    [| "GET /timer HTTP/1.1"; "Upgrade: websocket"; "Connection: Upgrade"|]
-    |> Array.map(fun x->lines |> Array.exists(fun y->x.ToLower()=y.ToLower()))
-    |> Array.reduce(fun x y->x && y)
+      [| "GET /timer HTTP/1.1"; "Upgrade: websocket"; "Connection: Upgrade"|]
+      |> Array.map(fun x->lines |> Array.exists(fun y->x.ToLower()=y.ToLower()))
+      |> Array.reduce(fun x y->x && y)
 
   let calcWSAccept6455 (secWebSocketKey:string) =
-    let ck = secWebSocketKey + guid6455
-    let sha1 = SHA1CryptoServiceProvider.Create()
-    let hashBytes = ck |> Encoding.ASCII.GetBytes |> sha1.ComputeHash
-    let Sec_WebSocket_Accept = hashBytes |> Convert.ToBase64String
-    Sec_WebSocket_Accept
+      let ck = secWebSocketKey + guid6455
+      let sha1 = SHA1CryptoServiceProvider.Create()
+      let hashBytes = ck |> Encoding.ASCII.GetBytes |> sha1.ComputeHash
+      let Sec_WebSocket_Accept = hashBytes |> Convert.ToBase64String
+      Sec_WebSocket_Accept
 
   let createAcceptString6455 acceptCode =
-    "HTTP/1.1 101 Switching Protocols\r\n" +
-    "Upgrade: websocket\r\n" +
-    "Connection: Upgrade\r\n" +
-    "Sec-WebSocket-Accept: " + acceptCode + "\r\n" + "\r\n"
+      "HTTP/1.1 101 Switching Protocols\r\n" +
+      "Upgrade: websocket\r\n" +
+      "Connection: Upgrade\r\n" +
+      "Sec-WebSocket-Accept: " + acceptCode + "\r\n" + "\r\n"
 
   let getKey (key:String) arr =
-      try
-        let item = (Array.find (fun (s:String) -> s.StartsWith(key)) arr)
-        item.Substring key.Length
-      with
-        | _ -> ""
+      try let item = (Array.find (fun (s:String) -> s.StartsWith(key)) arr)
+          item.Substring key.Length
+      with | _ -> ""
+
+  let wsResponse lines =
+      (getKey "Sec-WebSocket-Key:" lines).Substring(1)
+      |> calcWSAccept6455 |> createAcceptString6455 |> Encoding.ASCII.GetBytes
 
   let makeFrame_ShortTxt (P:byte array) =
-    let message = new MemoryStream()
-    try
-      message.WriteByte(byte 0x81)
-      message.WriteByte(byte P.Length)
-      message.Write(P,0,P.Length)
-      message.ToArray()
-    finally
-      message.Close()
+      let message = new MemoryStream()
+      try message.WriteByte(byte 0x81)
+          message.WriteByte(byte P.Length)
+          message.Write(P,0,P.Length)
+          message.ToArray()
+      finally
+          message.Close()
 
 open ServerUtil
 
@@ -137,10 +138,7 @@ module WebSocketServer =
                               |> fun hs->hs.Split([|"\r\n"|], StringSplitOptions.RemoveEmptyEntries)
                   match isWebSocketsUpgrade lines with
                   | true ->
-                      let acceptStr = (getKey "Sec-WebSocket-Key:" lines).Substring(1)
-                                      |> calcWSAccept6455
-                                      |> createAcceptString6455
-                      do! ns.AsyncWrite <| Encoding.ASCII.GetBytes acceptStr
+                      do! ns.AsyncWrite (wsResponse lines)
                       ctrl.Post(Connect (inbox,ns))
                       Async.Start(runTelemetry ns inbox ct ctrl, ct)
                       Async.Start(runLoop ns inbox ct tcp ctrl, ct)
