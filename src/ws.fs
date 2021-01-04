@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Net
 open System.Net.Sockets
+open System.Net.WebSockets
 open System.Text
 open System.Threading
 open System.Runtime.Serialization
@@ -104,8 +105,14 @@ module WebSocketServer =
       (ct: CancellationToken) (tcp: TcpClient) (ctrl: MailboxProcessor<Msg>) = async {
       try while not ct.IsCancellationRequested do
           let bytes = Array.create tcp.ReceiveBufferSize (byte 0)
-          let! len = ns.ReadAsync (bytes, 0, bytes.Length) |> Async.AwaitTask
-          printfn "HANDLE FRAME %A" bytes.[1..len]
+          let ws = WebSocket.CreateFromStream((ns :> Stream),true,"n2o",TimeSpan(1, 0, 0))
+          let! (result:WebSocketReceiveResult) = ws.ReceiveAsync(new ArraySegment<byte>(bytes), ct) |> Async.AwaitTask
+          let len = result.Count
+          let msg = match (int result.MessageType) with
+                    | 2 -> printfn "HANDLE CLOSE"
+                    | 1 -> printfn "HANDLE BINARY %A" bytes.[0..len]
+                    | 0 -> printfn "HANDLE TEXT %s" (BitConverter.ToString(bytes.[0..len]));
+                    | x -> printfn "HANDLE %A" x
           do! writeTime ns (Time.New(DateTime.Now))
       finally
           printfn "LOOP DIE"
