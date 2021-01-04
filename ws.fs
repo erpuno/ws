@@ -29,8 +29,7 @@ module ServerUtil =
     "HTTP/1.1 101 Switching Protocols\r\n" +
     "Upgrade: websocket\r\n" +
     "Connection: Upgrade\r\n" +
-    "Sec-WebSocket-Accept: " + acceptCode + "\r\n"
-    + "\r\n"
+    "Sec-WebSocket-Accept: " + acceptCode + "\r\n" + "\r\n"
 
   let getKey (key:String) arr =
       try
@@ -48,7 +47,6 @@ module ServerUtil =
       message.ToArray()
     finally
       message.Close()
-
 
 open ServerUtil
 
@@ -149,7 +147,9 @@ module WebSocketServer =
                               |> fun hs->hs.Split([|"\r\n"|], StringSplitOptions.RemoveEmptyEntries)
                   match isWebSocketsUpgrade lines with
                   | true ->
-                      let acceptStr = (getKey "Sec-WebSocket-Key:" lines).Substring(1) |> calcWSAccept6455 |> createAcceptString6455
+                      let acceptStr = (getKey "Sec-WebSocket-Key:" lines).Substring(1)
+                                      |> calcWSAccept6455
+                                      |> createAcceptString6455
                       Console.WriteLine acceptStr
                       do! ns.AsyncWrite <| Encoding.ASCII.GetBytes acceptStr
                       ctrl.Post(Connect (inbox,ns))
