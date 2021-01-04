@@ -66,7 +66,6 @@ module WebSocketServer =
 
   let port = 1900
   let ipAddress = IPAddress.Loopback.ToString()
-  let origin = "ws://localhost"
   let startMailboxProcessor ct f = MailboxProcessor.Start(f, cancellationToken = ct)
 
   let writeTime (ns: NetworkStream) (time: Time) = async {
