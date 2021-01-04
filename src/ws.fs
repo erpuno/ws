@@ -165,7 +165,6 @@ module WebSocketServer =
   let acceptLoop (controller: MailboxProcessor<Msg>)
       (listener: TcpListener) (cts: CancellationToken) = async {
       try
-          listener.Start(10)
           while not cts.IsCancellationRequested do
               let! client = Async.FromBeginEnd(listener.BeginAcceptTcpClient, listener.EndAcceptTcpClient)
               client.NoDelay <- true
@@ -179,6 +178,13 @@ module WebSocketServer =
       let cts = new CancellationTokenSource()
       let token = cts.Token
       let controller = runController token
+      try
+            listener.Start(10)
+      with
+        | :? SocketException ->
+            failwithf "ERROR: %s/%i is using by another program" ipAddress port
+        | err ->
+            failwithf "ERROR: %s" err.Message
       Async.Start(acceptLoop controller listener token, token)
       Async.Start(heartbeat controller 1000, token)
       { new IDisposable with member x.Dispose() = cts.Cancel()}
@@ -192,6 +198,12 @@ module WebSocketServer =
 module Program =
 
   [<EntryPoint>]
-  let main argv =
-      WebSocketServer.start()
-      0
+    let main _ =
+        let mutable exitCode = 0
+        try
+            WebSocketServer.start ()
+        with exn ->
+            Console.WriteLine exn.Message
+            exitCode <- 1
+
+        exitCode
