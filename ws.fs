@@ -44,8 +44,10 @@ module ServerUtil =
       "Sec-WebSocket-Accept: " + acceptCode + "\r\n" + "\r\n"
 
   let wsResponse lines =
-      (getKey "Sec-WebSocket-Key:" lines).Substring(1)
-      |> calcWSAccept6455 |> createAcceptString6455 |> Encoding.ASCII.GetBytes
+      (match lines with
+       | [||] -> ""
+       | _ -> (getKey "Sec-WebSocket-Key:" lines).Substring(1) |> calcWSAccept6455 |> createAcceptString6455)
+      |> Encoding.ASCII.GetBytes
 
   let webSocket (lines: string array) =
       (isWebSocketsUpgrade lines, wsResponse lines)
@@ -143,8 +145,8 @@ module WebSocketServer =
               let bytes = Array.create tcp.ReceiveBufferSize (byte 0)
               let! len  = ns.ReadAsync (bytes, 0, bytes.Length) |> Async.AwaitTask
               match webSocket (getLines bytes len) with
-              | (true,response) ->
-                  do! ns.AsyncWrite response
+              | (true,upgrade) ->
+                  do! ns.AsyncWrite upgrade
                   ctrl.Post(Connect (inbox,ns))
                   Async.Start(runTelemetry ns inbox ct ctrl, ct)
                   Async.Start(runLoop ns inbox ct tcp ctrl, ct)
