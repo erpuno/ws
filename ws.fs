@@ -139,9 +139,9 @@ module WebSocketServer =
           async {
               let ns = tcp.GetStream()
               let bytes = Array.create tcp.ReceiveBufferSize (byte 0)
-              let bytesReadCount = ns.Read (bytes, 0, bytes.Length)
-              if bytesReadCount > 8 then
-                  let lines = bytes.[..(bytesReadCount-9)]
+              let! len = ns.ReadAsync (bytes, 0, bytes.Length) |> Async.AwaitTask
+              if len > 8 then
+                  let lines = bytes.[..(len-9)]
                               |> System.Text.UTF8Encoding.UTF8.GetString
                               |> fun hs->hs.Split([|"\r\n"|], StringSplitOptions.RemoveEmptyEntries)
                   match isWebSocketsUpgrade lines with
@@ -149,7 +149,6 @@ module WebSocketServer =
                       let acceptStr = (getKey "Sec-WebSocket-Key:" lines).Substring(1)
                                       |> calcWSAccept6455
                                       |> createAcceptString6455
-                      Console.WriteLine acceptStr
                       do! ns.AsyncWrite <| Encoding.ASCII.GetBytes acceptStr
                       ctrl.Post(Connect (inbox,ns))
                       Async.Start(run ns inbox ct ctrl, ct)
