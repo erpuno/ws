@@ -79,7 +79,7 @@ module Server =
 
 
 
-    let runRequestDispatcher () =
+    let supervisor () =
         let cts = new CancellationTokenSource()
         let token = cts.Token
         let controller = runController token
@@ -100,6 +100,5 @@ module Server =
             member x.Dispose() = cts.Cancel() }
 
     let start () =
-        use dispose = runRequestDispatcher ()
-        printfn "press any key to stop..."
-        Console.ReadKey() |> ignore
+        use dispose = supervisor ()
+        Thread.Sleep -1
