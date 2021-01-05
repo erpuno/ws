@@ -10,6 +10,8 @@ open System.Threading
 open System.Runtime.Serialization
 open System.Security.Cryptography
 
+// Pure MailboxProcessor-based WebSocket Server
+
 [<AutoOpen>]
 module Server =
 
