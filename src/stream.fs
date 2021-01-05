@@ -53,9 +53,8 @@ module Stream =
                 =
         async {
             try
+                let mutable bytes = Array.create size (byte 0)
                 while not ct.IsCancellationRequested do
-                    let bytes = Array.create size (byte 0)
-
                     let ws =
                         WebSocket.CreateFromStream
                             ((ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
@@ -66,19 +65,18 @@ module Stream =
 
                     let len = result.Count
 
-                    let _ =
-                        match (int result.MessageType) with
-                        | 2 ->
-                            printfn "HANDLE CLOSE"
-                        | 1 ->
-                            printfn "HANDLE BINARY %A" bytes.[0..len]
-                        | 0 ->
-                            let text = BitConverter.ToString(bytes.[0..len])
-                            printfn "HANDLE TEXT %s" text
-                        | x ->
-                            printfn "HANDLE %A" x
-
-                    do! writeTime ns (Telemetry.Time.New(DateTime.Now))
+                    match (int result.MessageType) with
+                    | 2 ->
+                        printfn "HANDLE CLOSE"
+                    | 1 ->
+                        printfn "HANDLE BINARY %A" bytes.[0..len]
+                        do! writeTime ns (Telemetry.Time.New(DateTime.Now))
+                    | 0 ->
+                        let text = BitConverter.ToString(bytes.[0..len])
+                        printfn "HANDLE TEXT %s" text
+                        do! writeTime ns (Telemetry.Time.New(DateTime.Now))
+                    | x ->
+                        printfn "HANDLE %A" x
             finally
                 printfn "LOOP DIE"
                 ctrl.Post(Disconnect <| inbox)
