@@ -10,6 +10,8 @@ open System.Threading
 open System.Runtime.Serialization
 open System.Security.Cryptography
 
+// Async NetworkStream Combinators
+
 [<AutoOpen>]
 module Stream =
 
