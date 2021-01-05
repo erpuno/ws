@@ -18,14 +18,11 @@ module Server =
     let port = 1900
     let ipAddress = IPAddress.Loopback.ToString()
 
-    let startMailboxProcessor ct f =
-        MailboxProcessor.Start(f, cancellationToken = ct)
-
     let runWorkers (tcp: TcpClient)
                    (ctrl: MailboxProcessor<Sup>)
                    (ct: CancellationToken)
                    =
-        startMailboxProcessor ct (fun (inbox: MailboxProcessor<Time>) ->
+        MailboxProcessor.Start((fun (inbox: MailboxProcessor<Time>) ->
             async {
                 let ns = tcp.GetStream()
                 let size = tcp.ReceiveBufferSize
@@ -38,10 +35,10 @@ module Server =
                 | (true, upgrade) ->
                     do! ns.AsyncWrite upgrade
                     ctrl.Post(Connect(inbox, ns))
-                    Async.Start(runTelemetry ns inbox ct ctrl, ct)
-                    Async.Start(runLoop ns size inbox ct ctrl, ct)
+                    Async.StartImmediate(runTelemetry ns inbox ct ctrl, ct)
+                    Async.StartImmediate(runLoop ns size inbox ct ctrl, ct)
                 | _ -> tcp.Close()
-            })
+            }), cancellationToken = ct)
 
     let acceptLoop (listener: TcpListener)
                    (ct: CancellationToken)
@@ -61,7 +58,7 @@ module Server =
         }
 
     let runController (ct: CancellationToken) =
-        startMailboxProcessor ct (fun (inbox: MailboxProcessor<Sup>) ->
+        MailboxProcessor.Start((fun (inbox: MailboxProcessor<Sup>) ->
             let listeners = ResizeArray<_>()
 
             async {
@@ -75,7 +72,7 @@ module Server =
                         Console.WriteLine "Disconnect"
                         listeners.Remove(l) |> ignore
                     | Tick msg -> listeners.ForEach(fun l -> l.Post msg)
-            })
+            }), cancellationToken = ct)
 
 
 
