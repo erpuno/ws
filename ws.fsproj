@@ -9,7 +9,11 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="5.0.0" />
     <PackageReference Include="FSharp.Data" Version="3.3.3" />
-    <Compile Include="src/*.fs" />
+    <Compile Include="src/telemetry.fs" />
+    <Compile Include="src/6455.fs" />
+    <Compile Include="src/stream.fs" />
+    <Compile Include="src/server.fs" />
+    <Compile Include="src/program.fs" />
   </ItemGroup>
 
 </Project>
