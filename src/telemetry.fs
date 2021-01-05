@@ -26,7 +26,7 @@ module Telemetry =
               Minute = dt.Minute
               Second = dt.Second }
 
-type Msg =
-    | Connect of MailboxProcessor<Time> * NetworkStream
-    | Disconnect of MailboxProcessor<Time>
-    | Tick of Time
+    type Sup =
+        | Connect of MailboxProcessor<Time> * NetworkStream
+        | Disconnect of MailboxProcessor<Time>
+        | Tick of Time

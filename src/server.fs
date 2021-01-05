@@ -22,7 +22,7 @@ module Server =
         MailboxProcessor.Start(f, cancellationToken = ct)
 
     let runWorkers (tcp: TcpClient)
-                   (ctrl: MailboxProcessor<Msg>)
+                   (ctrl: MailboxProcessor<Sup>)
                    (ct: CancellationToken)
                    =
         startMailboxProcessor ct (fun (inbox: MailboxProcessor<Time>) ->
@@ -45,7 +45,7 @@ module Server =
 
     let acceptLoop (listener: TcpListener)
                    (ct: CancellationToken)
-                   (ctrl: MailboxProcessor<Msg>)
+                   (ctrl: MailboxProcessor<Sup>)
                    =
         async {
             try
@@ -61,7 +61,7 @@ module Server =
         }
 
     let runController (ct: CancellationToken) =
-        startMailboxProcessor ct (fun (inbox: MailboxProcessor<Msg>) ->
+        startMailboxProcessor ct (fun (inbox: MailboxProcessor<Sup>) ->
             let listeners = ResizeArray<_>()
 
             async {

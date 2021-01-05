@@ -32,7 +32,7 @@ module Stream =
     let runTelemetry (ns: NetworkStream)
                      (inbox: MailboxProcessor<Time>)
                      (ct: CancellationToken)
-                     (ctrl: MailboxProcessor<Msg>)
+                     (ctrl: MailboxProcessor<Sup>)
                      =
         async {
             try
@@ -49,7 +49,7 @@ module Stream =
                 (size: int)
                 (inbox: MailboxProcessor<Time>)
                 (ct: CancellationToken)
-                (ctrl: MailboxProcessor<Msg>)
+                (ctrl: MailboxProcessor<Sup>)
                 =
         async {
             try
@@ -86,7 +86,7 @@ module Stream =
 
     let heartbeat (interval: int)
                   (ct: CancellationToken)
-                  (ctrl: MailboxProcessor<Msg>)
+                  (ctrl: MailboxProcessor<Sup>)
                   =
         async {
             while not ct.IsCancellationRequested do
