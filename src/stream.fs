@@ -12,18 +12,14 @@ module Stream =
 
     let mutable protocol: byte [] -> byte [] = fun x -> x
 
-
     let send (ws: WebSocket) (ct: CancellationToken) (bytes: byte []) =
         async {
             ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
             |> ignore
         }
 
-    let runTelemetry
-        (ws: WebSocket)
-        (inbox: MailboxProcessor<Payload>)
-        (ct: CancellationToken)
-        (ctrl: MailboxProcessor<Sup>)
+    let runTelemetry (ws: WebSocket) (inbox: MailboxProcessor<Payload>)
+        (ct: CancellationToken) (ctrl: MailboxProcessor<Sup>)
         =
         async {
             try
@@ -37,7 +33,8 @@ module Stream =
                 |> ignore
         }
 
-    let runLoop (ws: WebSocket) (size: int) (ct: CancellationToken) (ctrl: MailboxProcessor<Sup>) =
+    let runLoop (ws: WebSocket) (size: int)
+        (ct: CancellationToken) (ctrl: MailboxProcessor<Sup>) =
         async {
             try
                 let mutable bytes = Array.create size (byte 0)
