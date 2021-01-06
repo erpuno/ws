@@ -15,9 +15,6 @@ open System.Security.Cryptography
 [<AutoOpen>]
 module Server =
 
-    let port = 1900
-    let ipAddress = "0.0.0.0"
-
     let runWorkers (tcp: TcpClient)
                    (ctrl: MailboxProcessor<Sup>)
                    (ct: CancellationToken)
@@ -40,20 +37,18 @@ module Server =
                 | _ -> tcp.Close()
             }), cancellationToken = ct)
 
-    let acceptLoop (listener: TcpListener)
+    let acceptLoop (lst: TcpListener)
                    (ct: CancellationToken)
                    (ctrl: MailboxProcessor<Sup>)
                    =
         async {
             try
                 while not ct.IsCancellationRequested do
-                     let! client = Async.FromBeginEnd(
-                          listener.BeginAcceptTcpClient,
-                          listener.EndAcceptTcpClient)
+                     let! client = Async.FromBeginEnd(lst.BeginAcceptTcpClient, lst.EndAcceptTcpClient)
                      client.NoDelay <- true
                      runWorkers client ctrl ct |> ignore
             finally
-                listener.Stop()
+                lst.Stop()
         }
 
     let runController (ct: CancellationToken) =
@@ -75,17 +70,17 @@ module Server =
 
 
 
-    let supervisor () =
+    let supervisor (addr:string)(port:int) =
         let cts = new CancellationTokenSource()
         let token = cts.Token
         let controller = runController token
-        let listener = TcpListener(IPAddress.Parse(ipAddress), port)
+        let listener = TcpListener(IPAddress.Parse(addr), port)
 
         try
             listener.Start(10)
         with
         | :? SocketException ->
-            failwithf "ERROR: %s/%i is using by another program" ipAddress port
+            failwithf "ERROR: %s/%i is using by another program" addr port
         | err ->
             failwithf "ERROR: %s" err.Message
 
@@ -95,6 +90,6 @@ module Server =
         { new IDisposable with
             member x.Dispose() = cts.Cancel() }
 
-    let start () =
-        use dispose = supervisor ()
+    let start (addr:string) (port:int) =
+        use dispose = supervisor addr port
         Thread.Sleep -1

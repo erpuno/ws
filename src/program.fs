@@ -17,7 +17,7 @@ module Program =
         let mutable exitCode = 0
 
         try
-            Server.start ()
+            Server.start "0.0.0.0" 1900
         with exn ->
             Console.WriteLine exn.Message
             exitCode <- 1
