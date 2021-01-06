@@ -30,7 +30,7 @@ module Server =
 
                         sup.Post(Connect(inbox, ws))
                         Async.StartImmediate(telemetry ws inbox ct sup, ct)
-                        Async.StartImmediate(looper ws size ct sup, ct)
+                        return! looper ws size ct sup
                     | _ -> tcp.Close()
                 }),
             cancellationToken = ct
