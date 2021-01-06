@@ -15,21 +15,14 @@ open System.Security.Cryptography
 [<AutoOpen>]
 module Stream =
 
-    let writeTime (ns: NetworkStream)
-                  (time: Time)
-                  =
+    let mutable protocol : byte[] -> byte[] = fun x -> x
+
+    let send (ns: WebSocket) (ct: CancellationToken) (bytes: byte[]) =
         async {
-            let json =
-                System.Runtime.Serialization.Json.DataContractJsonSerializer
-                    (typeof<Time>)
+            ns.SendAsync(ArraySegment<byte>(bytes),
+                WebSocketMessageType.Binary, true, ct) |> ignore }
 
-            let payload = new MemoryStream()
-            json.WriteObject(payload, time)
-            let df = makeFrame_ShortTxt <| payload.ToArray()
-            do! ns.AsyncWrite(df, 0, df.Length)
-        }
-
-    let runTelemetry (ns: NetworkStream)
+    let runTelemetry (ws: WebSocket)
                      (inbox: MailboxProcessor<Time>)
                      (ct: CancellationToken)
                      (ctrl: MailboxProcessor<Sup>)
@@ -38,14 +31,14 @@ module Stream =
             try
                 while not ct.IsCancellationRequested do
                     let! _ = inbox.Receive()
-                    do! writeTime ns (Time.New(DateTime.Now))
+                    do! send ws ct ("TICK" |> Encoding.ASCII.GetBytes)
             finally
                 printfn "PUSHER DIE"
                 ctrl.Post(Disconnect <| inbox)
-                ns.Close()
+                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "PUSHER DIE", ct) |> ignore
         }
 
-    let runLoop (ns: NetworkStream)
+    let runLoop (ws: WebSocket)
                 (size: int)
                 (inbox: MailboxProcessor<Time>)
                 (ct: CancellationToken)
@@ -55,9 +48,6 @@ module Stream =
             try
                 let mutable bytes = Array.create size (byte 0)
                 while not ct.IsCancellationRequested do
-                    let ws =
-                        WebSocket.CreateFromStream
-                            ((ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
 
                     let! (result: WebSocketReceiveResult) =
                         ws.ReceiveAsync(ArraySegment<byte>(bytes), ct)
@@ -70,17 +60,17 @@ module Stream =
                         printfn "HANDLE CLOSE"
                     | 1 ->
                         printfn "HANDLE BINARY %A" bytes.[0..len]
-                        do! writeTime ns (Telemetry.Time.New(DateTime.Now))
+                        do! send ws ct (protocol bytes.[0..len])
                     | 0 ->
                         let text = BitConverter.ToString(bytes.[0..len])
                         printfn "HANDLE TEXT %s" text
-                        do! writeTime ns (Telemetry.Time.New(DateTime.Now))
+                        do! send ws ct (protocol bytes.[0..len])
                     | x ->
                         printfn "HANDLE %A" x
             finally
                 printfn "LOOP DIE"
                 ctrl.Post(Disconnect <| inbox)
-                ns.Close()
+                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER DIE", ct) |> ignore
         }
 
 

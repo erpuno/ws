@@ -32,8 +32,9 @@ module Server =
                 | (true, upgrade) ->
                     do! ns.AsyncWrite upgrade
                     ctrl.Post(Connect(inbox, ns))
-                    Async.StartImmediate(runTelemetry ns inbox ct ctrl, ct)
-                    Async.StartImmediate(runLoop ns size inbox ct ctrl, ct)
+                    let ws = WebSocket.CreateFromStream((ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
+                    Async.StartImmediate(runTelemetry ws inbox ct ctrl, ct)
+                    Async.StartImmediate(runLoop ws size inbox ct ctrl, ct)
                 | _ -> tcp.Close()
             }), cancellationToken = ct)
 
