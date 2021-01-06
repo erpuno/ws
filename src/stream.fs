@@ -10,7 +10,7 @@ open System.Threading
 open System.Runtime.Serialization
 open System.Security.Cryptography
 
-// Async WebSocket Combinators
+// Async WebSocket Tick pusher and
 
 [<AutoOpen>]
 module Stream =
@@ -33,14 +33,12 @@ module Stream =
                     let! _ = inbox.Receive()
                     do! send ws ct ("TICK" |> Encoding.ASCII.GetBytes)
             finally
-                printfn "PUSHER DIE"
                 ctrl.Post(Disconnect <| inbox)
                 ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "PUSHER DIE", ct) |> ignore
         }
 
     let runLoop (ws: WebSocket)
                 (size: int)
-                (inbox: MailboxProcessor<Payload>)
                 (ct: CancellationToken)
                 (ctrl: MailboxProcessor<Sup>)
                 =
@@ -56,7 +54,6 @@ module Stream =
                     | WebSocketMessageType.Close  -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
             finally
-                printfn "LOOPER DIE"
-                ctrl.Post(Disconnect <| inbox)
+                ctrl.Post(Close <| ws)
                 ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER DIE", ct) |> ignore
         }

@@ -10,6 +10,8 @@ open System.Threading
 open System.Runtime.Serialization
 open System.Security.Cryptography
 
+// Most minimal type system for F# WebSocket server infrastructure
+
 [<AutoOpen>]
 module Telemetry =
 
@@ -19,6 +21,7 @@ module Telemetry =
          | Ping
 
     type Sup =
-        | Connect of MailboxProcessor<Payload> * NetworkStream
-        | Disconnect of MailboxProcessor<Payload>
-        | Tick
+         | Connect of MailboxProcessor<Payload> * WebSocket
+         | Disconnect of MailboxProcessor<Payload>
+         | Close of WebSocket
+         | Tick

@@ -31,10 +31,10 @@ module Server =
                 match webSocket (getLines bytes len) with
                 | (true, upgrade) ->
                     do! ns.AsyncWrite upgrade
-                    ctrl.Post(Connect(inbox, ns))
                     let ws = WebSocket.CreateFromStream((ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
+                    ctrl.Post(Connect(inbox, ws))
                     Async.StartImmediate(runTelemetry ws inbox ct ctrl, ct)
-                    Async.StartImmediate(runLoop ws size inbox ct ctrl, ct)
+                    Async.StartImmediate(runLoop ws size ct ctrl, ct)
                 | _ -> tcp.Close()
             }), cancellationToken = ct)
 
@@ -65,11 +65,12 @@ module Server =
     let runController (ct: CancellationToken) =
         MailboxProcessor.Start((fun (inbox: MailboxProcessor<Sup>) ->
             let listeners = ResizeArray<_>()
-
             async {
                 while not ct.IsCancellationRequested do
                     let! msg = inbox.Receive()
                     match msg with
+                    | Close ws ->
+                        printfn "Close: %A" ws
                     | Connect (l, ns) ->
                         printfn "Connect: %A %A" l ns
                         listeners.Add(l)
