@@ -12,7 +12,7 @@ open System.Threading
 [<AutoOpen>]
 module Server =
 
-    let runWorkers (tcp: TcpClient) (ctrl: MailboxProcessor<Sup>) (ct: CancellationToken) =
+    let startClient (tcp: TcpClient) (sup: MailboxProcessor<Sup>) (ct: CancellationToken) =
         MailboxProcessor.Start(
             (fun (inbox: MailboxProcessor<Payload>) ->
                 async {
@@ -28,33 +28,33 @@ module Server =
                             WebSocket.CreateFromStream(
                                 (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
 
-                        ctrl.Post(Connect(inbox, ws))
-                        Async.StartImmediate(runTelemetry ws inbox ct ctrl, ct)
-                        Async.StartImmediate(runLoop ws size ct ctrl, ct)
+                        sup.Post(Connect(inbox, ws))
+                        Async.StartImmediate(runTelemetry ws inbox ct sup, ct)
+                        Async.StartImmediate(runLoop ws size ct sup, ct)
                     | _ -> tcp.Close()
                 }),
             cancellationToken = ct
         )
 
-    let heartbeat (interval: int) (ct: CancellationToken) (ctrl: MailboxProcessor<Sup>) =
+    let heartbeat (interval: int) (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             while not ct.IsCancellationRequested do
                 do! Async.Sleep interval
-                ctrl.Post(Tick)
+                sup.Post(Tick)
         }
 
-    let acceptLoop (lst: TcpListener) (ct: CancellationToken) (ctrl: MailboxProcessor<Sup>) =
+    let acceptLoop (lst: TcpListener) (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
                 while not ct.IsCancellationRequested do
                     let! client = Async.FromBeginEnd(lst.BeginAcceptTcpClient, lst.EndAcceptTcpClient)
                     client.NoDelay <- true
-                    runWorkers client ctrl ct |> ignore
+                    startClient client sup ct |> ignore
             finally
                 lst.Stop()
         }
 
-    let runController (ct: CancellationToken) =
+    let startSupervisor (ct: CancellationToken) =
         MailboxProcessor.Start(
             (fun (inbox: MailboxProcessor<Sup>) ->
                 let listeners = ResizeArray<_>()
@@ -79,7 +79,7 @@ module Server =
     let supervisor (addr: string) (port: int) =
         let cts = new CancellationTokenSource()
         let token = cts.Token
-        let controller = runController token
+        let sup = startSupervisor token
         let listener = TcpListener(IPAddress.Parse(addr), port)
 
         try
@@ -88,8 +88,9 @@ module Server =
         | :? SocketException -> failwithf "ERROR: %s/%i is using by another program" addr port
         | err -> failwithf "ERROR: %s" err.Message
 
-        Async.StartImmediate(acceptLoop listener token controller, token)
-        Async.StartImmediate(heartbeat 1000 token controller, token)
+        Async.StartImmediate(acceptLoop listener token sup, token)
+        Async.StartImmediate(heartbeat 1000 token sup, token)
+
         { new IDisposable with
             member x.Dispose() = cts.Cancel() }
 

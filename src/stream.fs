@@ -19,20 +19,21 @@ module Stream =
         }
 
     let runTelemetry (ws: WebSocket) (inbox: MailboxProcessor<Payload>)
-        (ct: CancellationToken) (ctrl: MailboxProcessor<Sup>) =
+        (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
                 while not ct.IsCancellationRequested do
                     let! _ = inbox.Receive()
                     do! send ws ct ("TICK" |> Encoding.ASCII.GetBytes)
             finally
-                ctrl.Post(Disconnect <| inbox)
+                sup.Post(Disconnect <| inbox)
+
                 ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "PUSHER DIE", ct)
                 |> ignore
         }
 
     let runLoop (ws: WebSocket) (size: int)
-        (ct: CancellationToken) (ctrl: MailboxProcessor<Sup>) =
+        (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
                 let mutable bytes = Array.create size (byte 0)
@@ -47,7 +48,8 @@ module Stream =
                     | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
             finally
-                ctrl.Post(Close <| ws)
+                sup.Post(Close <| ws)
+
                 ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER DIE", ct)
                 |> ignore
         }
