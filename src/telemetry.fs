@@ -14,19 +14,11 @@ open System.Security.Cryptography
 module Telemetry =
 
     [<DataContract>]
-    type Time =
-        { [<DataMember(Name = "hour")>]
-          mutable Hour: int
-          [<DataMember(Name = "minute")>]
-          mutable Minute: int
-          [<DataMember(Name = "second")>]
-          mutable Second: int }
-        static member New(dt: DateTime) =
-            { Hour = dt.Hour
-              Minute = dt.Minute
-              Second = dt.Second }
+    type Payload =
+         | Binary of byte[]
+         | Ping
 
     type Sup =
-        | Connect of MailboxProcessor<Time> * NetworkStream
-        | Disconnect of MailboxProcessor<Time>
-        | Tick of Time
+        | Connect of MailboxProcessor<Payload> * NetworkStream
+        | Disconnect of MailboxProcessor<Payload>
+        | Tick

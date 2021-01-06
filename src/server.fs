@@ -19,7 +19,7 @@ module Server =
                    (ctrl: MailboxProcessor<Sup>)
                    (ct: CancellationToken)
                    =
-        MailboxProcessor.Start((fun (inbox: MailboxProcessor<Time>) ->
+        MailboxProcessor.Start((fun (inbox: MailboxProcessor<Payload>) ->
             async {
                 let ns = tcp.GetStream()
                 let size = tcp.ReceiveBufferSize
@@ -66,10 +66,8 @@ module Server =
                     | Disconnect l ->
                         Console.WriteLine "Disconnect"
                         listeners.Remove(l) |> ignore
-                    | Tick msg -> listeners.ForEach(fun l -> l.Post msg)
+                    | Tick -> listeners.ForEach(fun l -> l.Post Ping)
             }), cancellationToken = ct)
-
-
 
     let supervisor (addr:string)(port:int) =
         let cts = new CancellationTokenSource()

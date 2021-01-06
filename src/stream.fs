@@ -23,7 +23,7 @@ module Stream =
                 WebSocketMessageType.Binary, true, ct) |> ignore }
 
     let runTelemetry (ws: WebSocket)
-                     (inbox: MailboxProcessor<Time>)
+                     (inbox: MailboxProcessor<Payload>)
                      (ct: CancellationToken)
                      (ctrl: MailboxProcessor<Sup>)
                      =
@@ -40,7 +40,7 @@ module Stream =
 
     let runLoop (ws: WebSocket)
                 (size: int)
-                (inbox: MailboxProcessor<Time>)
+                (inbox: MailboxProcessor<Payload>)
                 (ct: CancellationToken)
                 (ctrl: MailboxProcessor<Sup>)
                 =
@@ -66,7 +66,7 @@ module Stream =
                         printfn "HANDLE TEXT %s" text
                         do! send ws ct (protocol bytes.[0..len])
                     | x ->
-                        printfn "HANDLE %A" x
+                        printfn "HANDLE X %i" x
             finally
                 printfn "LOOP DIE"
                 ctrl.Post(Disconnect <| inbox)
@@ -81,5 +81,5 @@ module Stream =
         async {
             while not ct.IsCancellationRequested do
                 do! Async.Sleep interval
-                ctrl.Post(Tick <| Time.New(DateTime.Now))
+                ctrl.Post(Tick)
         }
