@@ -1,13 +1,3 @@
-open System
-open System.IO
-open System.Net
-open System.Net.Sockets
-open System.Net.WebSockets
-open System.Text
-open System.Threading
-open System.Runtime.Serialization
-open System.Security.Cryptography
-
 open N2O
 
 module Program =
@@ -20,6 +10,6 @@ module Program =
             Stream.protocol <- echo
             Server.start "0.0.0.0" 1900
         with exn ->
-            Console.WriteLine exn.Message
+            printfn "EXIT: %A" exn.Message
             exitCode <- 1
         exitCode
