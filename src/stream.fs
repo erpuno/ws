@@ -28,7 +28,7 @@ module Stream =
             finally
                 sup.Post(Disconnect <| inbox)
 
-                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "PUSHER DIE", ct)
+                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "TELEMETRY", ct)
                 |> ignore
         }
 
@@ -50,7 +50,7 @@ module Stream =
             finally
                 sup.Post(Close <| ws)
 
-                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER DIE", ct)
+                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER", ct)
                 |> ignore
         }
 
