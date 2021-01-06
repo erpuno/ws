@@ -22,17 +22,18 @@ module RFC6455 =
         [| "GET /n2o HTTP/1.1"
            "Upgrade: websocket"
            "Connection: Upgrade" |]
-        |> Array.map (fun x ->
-            lines
-            |> Array.exists (fun y -> x.ToLower() = y.ToLower()))
+        |> Array.map
+            (fun x ->
+                lines
+
+                |> Array.exists (fun y -> x.ToLower() = y.ToLower()))
         |> Array.reduce (fun x y -> x && y)
 
     let getLines (bytes: Byte []) len =
         if len > 8 then
             bytes.[..(len - 9)]
             |> UTF8Encoding.UTF8.GetString
-            |> fun hs ->
-                hs.Split([| endOfLine |], StringSplitOptions.RemoveEmptyEntries)
+            |> fun hs -> hs.Split([| endOfLine |], StringSplitOptions.RemoveEmptyEntries)
         else
             [||]
 
@@ -45,11 +46,11 @@ module RFC6455 =
         |> Convert.ToBase64String
 
     let createAcceptString6455 acceptCode =
-        line "HTTP/1.1 101 Switching Protocols" +
-        line "Upgrade: websocket" +
-        line "Connection: Upgrade" +
-        line ("Sec-WebSocket-Accept: " + acceptCode) +
-        line ""
+        line "HTTP/1.1 101 Switching Protocols"
+        + line "Upgrade: websocket"
+        + line "Connection: Upgrade"
+        + line ("Sec-WebSocket-Accept: " + acceptCode)
+        + line ""
 
     let wsResponse lines =
         (match lines with
@@ -62,15 +63,3 @@ module RFC6455 =
 
     let webSocket (lines: string array) =
         (isWebSocketsUpgrade lines, wsResponse lines)
-
-    let makeFrame_ShortTxt (P: byte array) =
-        let message = new MemoryStream()
-
-        try
-            message.WriteByte(byte 0x81)
-            message.WriteByte(byte P.Length)
-            message.Write(P, 0, P.Length)
-            message.ToArray()
-        finally
-            message.Close()
-
