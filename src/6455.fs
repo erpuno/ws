@@ -42,7 +42,7 @@ module RFC6455 =
         "HTTP/1.1 101 Switching Protocols\r\n" +
         "Upgrade: websocket\r\n" +
         "Connection: Upgrade\r\n" +
-        ("Sec-WebSocket-Accept: " + acceptCode) + "\r\n\r\n"
+        "Sec-WebSocket-Accept: " + acceptCode + "\r\n\r\n"
 
     let wsResponse lines =
         (match lines with
