@@ -27,7 +27,6 @@ module Server =
                         let ws =
                             WebSocket.CreateFromStream(
                                 (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
-
                         sup.Post(Connect(inbox, ws))
                         Async.StartImmediate(telemetry ws inbox ct sup, ct)
                         return! looper ws size ct sup
@@ -58,11 +57,9 @@ module Server =
         MailboxProcessor.Start(
             (fun (inbox: MailboxProcessor<Sup>) ->
                 let listeners = ResizeArray<_>()
-
                 async {
                     while not ct.IsCancellationRequested do
                         let! msg = inbox.Receive()
-
                         match msg with
                         | Close ws -> printfn "Close: %A" ws
                         | Connect (l, ns) ->
