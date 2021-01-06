@@ -9,8 +9,8 @@ module Program =
         let echo = fun x -> x
         try
             System.Threading.ThreadPool.GetMinThreads(&workers,&io)
-            printfn "N2O/F# WebSocket Server"
-            printfn "[threads] Processing: %i, I/O: %i" workers io
+            printfn "N2O/F# WebSocket Server 1.0"
+            printfn "[smp] [processing:%i] [io:%i]" workers io
             System.Threading.ThreadPool.SetMaxThreads(workers,io) |> ignore
             Stream.protocol <- echo
             use disposing = Server.start "0.0.0.0" 1900
