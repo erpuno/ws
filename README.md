@@ -1,7 +1,7 @@
 F# WebSocket Server
 ===================
 
-MailboxProcessor and Async I/O base WebSocket server in 200 LOC.
+MailboxProcessor/Async-based WebSocket server with supervision and server-initiated pings in 200 LOC.
 
 ```
 $ dotnet build ws.fsproj
