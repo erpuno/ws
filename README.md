@@ -1,7 +1,7 @@
 F# WebSocket Server
 ===================
 
-Most minimal working code by using MailboxProcessor and Async I/O.
+MailboxProcessor and Async I/O base WebSocket server in 200 LOC.
 
 ```
 $ dotnet build ws.fsproj
