@@ -10,7 +10,7 @@ module Program =
         try
             System.Threading.ThreadPool.GetMinThreads(&workers,&io)
             printfn "N2O/F# WebSocket Server"
-            printfn "[threads] Workers: %i, I/O: %i" workers io
+            printfn "[threads] Processing: %i, I/O: %i" workers io
             System.Threading.ThreadPool.SetMaxThreads(workers,io) |> ignore
             Stream.protocol <- echo
             use disposing = Server.start "0.0.0.0" 1900
