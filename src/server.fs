@@ -38,6 +38,16 @@ module Server =
                 | _ -> tcp.Close()
             }), cancellationToken = ct)
 
+    let heartbeat (interval: int)
+                  (ct: CancellationToken)
+                  (ctrl: MailboxProcessor<Sup>)
+                  =
+        async {
+            while not ct.IsCancellationRequested do
+                do! Async.Sleep interval
+                ctrl.Post(Tick)
+        }
+
     let acceptLoop (lst: TcpListener)
                    (ct: CancellationToken)
                    (ctrl: MailboxProcessor<Sup>)

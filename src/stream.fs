@@ -10,7 +10,7 @@ open System.Threading
 open System.Runtime.Serialization
 open System.Security.Cryptography
 
-// Async NetworkStream Combinators
+// Async WebSocket Combinators
 
 [<AutoOpen>]
 module Stream =
@@ -48,38 +48,15 @@ module Stream =
             try
                 let mutable bytes = Array.create size (byte 0)
                 while not ct.IsCancellationRequested do
-
                     let! (result: WebSocketReceiveResult) =
-                        ws.ReceiveAsync(ArraySegment<byte>(bytes), ct)
-                        |> Async.AwaitTask
-
-                    let len = result.Count
-
-                    match (int result.MessageType) with
-                    | 2 ->
-                        printfn "HANDLE CLOSE"
-                    | 1 ->
-                        printfn "HANDLE BINARY %A" bytes.[0..len]
-                        do! send ws ct (protocol bytes.[0..len])
-                    | 0 ->
-                        let text = BitConverter.ToString(bytes.[0..len])
-                        printfn "HANDLE TEXT %s" text
-                        do! send ws ct (protocol bytes.[0..len])
-                    | x ->
-                        printfn "HANDLE X %i" x
+                        ws.ReceiveAsync(ArraySegment<byte>(bytes), ct) |> Async.AwaitTask
+                    match (result.MessageType) with
+                    | WebSocketMessageType.Text   -> do! send ws ct (protocol bytes.[0..result.Count])
+                    | WebSocketMessageType.Binary -> do! send ws ct (protocol bytes.[0..result.Count])
+                    | WebSocketMessageType.Close  -> ()
+                    | _ -> printfn "PROTOCOL VIOLATION"
             finally
-                printfn "LOOP DIE"
+                printfn "LOOPER DIE"
                 ctrl.Post(Disconnect <| inbox)
                 ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER DIE", ct) |> ignore
-        }
-
-
-    let heartbeat (interval: int)
-                  (ct: CancellationToken)
-                  (ctrl: MailboxProcessor<Sup>)
-                  =
-        async {
-            while not ct.IsCancellationRequested do
-                do! Async.Sleep interval
-                ctrl.Post(Tick)
         }

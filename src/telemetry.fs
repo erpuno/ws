@@ -15,7 +15,7 @@ module Telemetry =
 
     [<DataContract>]
     type Payload =
-         | Binary of byte[]
+         | Bin of byte[]
          | Ping
 
     type Sup =
