@@ -1,32 +1,30 @@
 namespace N2O
 
 open System
-open System.IO
-open System.Net
-open System.Net.Sockets
-open System.Net.WebSockets
 open System.Text
 open System.Threading
-open System.Runtime.Serialization
-open System.Security.Cryptography
+open System.Net.WebSockets
 
-// Async WebSocket Tick pusher and
+// MailboxProcessor-based Tick pusher and pure Async WebSocket looper
 
 [<AutoOpen>]
 module Stream =
 
-    let mutable protocol : byte[] -> byte[] = fun x -> x
+    let mutable protocol: byte [] -> byte [] = fun x -> x
 
-    let send (ns: WebSocket) (ct: CancellationToken) (bytes: byte[]) =
+
+    let send (ns: WebSocket) (ct: CancellationToken) (bytes: byte []) =
         async {
-            ns.SendAsync(ArraySegment<byte>(bytes),
-                WebSocketMessageType.Binary, true, ct) |> ignore }
+            ns.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
+            |> ignore
+        }
 
-    let runTelemetry (ws: WebSocket)
-                     (inbox: MailboxProcessor<Payload>)
-                     (ct: CancellationToken)
-                     (ctrl: MailboxProcessor<Sup>)
-                     =
+    let runTelemetry
+        (ws: WebSocket)
+        (inbox: MailboxProcessor<Payload>)
+        (ct: CancellationToken)
+        (ctrl: MailboxProcessor<Sup>)
+        =
         async {
             try
                 while not ct.IsCancellationRequested do
@@ -34,26 +32,30 @@ module Stream =
                     do! send ws ct ("TICK" |> Encoding.ASCII.GetBytes)
             finally
                 ctrl.Post(Disconnect <| inbox)
-                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "PUSHER DIE", ct) |> ignore
+
+                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "PUSHER DIE", ct)
+                |> ignore
         }
 
-    let runLoop (ws: WebSocket)
-                (size: int)
-                (ct: CancellationToken)
-                (ctrl: MailboxProcessor<Sup>)
-                =
+    let runLoop (ws: WebSocket) (size: int) (ct: CancellationToken) (ctrl: MailboxProcessor<Sup>) =
         async {
             try
                 let mutable bytes = Array.create size (byte 0)
+
                 while not ct.IsCancellationRequested do
                     let! (result: WebSocketReceiveResult) =
-                        ws.ReceiveAsync(ArraySegment<byte>(bytes), ct) |> Async.AwaitTask
+                        ws.ReceiveAsync(ArraySegment<byte>(bytes), ct)
+                        |> Async.AwaitTask
+
                     match (result.MessageType) with
-                    | WebSocketMessageType.Text   -> do! send ws ct (protocol bytes.[0..result.Count])
+                    | WebSocketMessageType.Text -> do! send ws ct (protocol bytes.[0..result.Count])
                     | WebSocketMessageType.Binary -> do! send ws ct (protocol bytes.[0..result.Count])
-                    | WebSocketMessageType.Close  -> ()
+                    | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
             finally
                 ctrl.Post(Close <| ws)
-                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER DIE", ct) |> ignore
+
+                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER DIE", ct)
+                |> ignore
         }
+
