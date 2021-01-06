@@ -4,14 +4,14 @@ module Program =
 
     [<EntryPoint>]
     let main _ =
-        let mutable (workers,io) = (4,4)
+        let mutable (cpu,io) = (4,4)
         let mutable ret = 0
         let echo = fun x -> x
         try
-            System.Threading.ThreadPool.GetMinThreads(&workers,&io)
+            System.Threading.ThreadPool.GetMinThreads(&cpu,&io)
             printfn "N2O/F# WebSocket Server 1.0"
-            printfn "[smp] [processing:%i] [io:%i]" workers io
-            System.Threading.ThreadPool.SetMaxThreads(workers,io) |> ignore
+            printfn "[smp] [cpu:%i] [io:%i]" cpu io
+            System.Threading.ThreadPool.SetMaxThreads(cpu,io) |> ignore
             Stream.protocol <- echo
             use disposing = Server.start "0.0.0.0" 1900
             System.Threading.Thread.Sleep -1
