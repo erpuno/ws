@@ -76,7 +76,7 @@ module Server =
             cancellationToken = ct
         )
 
-    let supervisor (addr: string) (port: int) =
+    let startServer (addr: string) (port: int) =
         let cts = new CancellationTokenSource()
         let token = cts.Token
         let sup = startSupervisor token
@@ -95,5 +95,5 @@ module Server =
             member x.Dispose() = cts.Cancel() }
 
     let start (addr: string) (port: int) =
-        use dispose = supervisor addr port
+        use dispose = startServer addr port
         Thread.Sleep -1
