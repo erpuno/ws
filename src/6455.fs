@@ -24,7 +24,7 @@ module RFC6455 =
         with _ -> ""
 
     let isWebSocketsUpgrade (lines: string array) =
-        [| "GET /timer HTTP/1.1"
+        [| "GET /n2o HTTP/1.1"
            "Upgrade: websocket"
            "Connection: Upgrade" |]
         |> Array.map (fun x ->

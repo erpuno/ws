@@ -16,7 +16,7 @@ open System.Security.Cryptography
 module Server =
 
     let port = 1900
-    let ipAddress = IPAddress.Loopback.ToString()
+    let ipAddress = "0.0.0.0"
 
     let runWorkers (tcp: TcpClient)
                    (ctrl: MailboxProcessor<Sup>)
@@ -46,13 +46,12 @@ module Server =
                    =
         async {
             try
-                let! client =
-                     Async.FromBeginEnd
-                         (listener.BeginAcceptTcpClient,
-                         listener.EndAcceptTcpClient)
-
-                client.NoDelay <- true
-                runWorkers client ctrl ct |> ignore
+                while not ct.IsCancellationRequested do
+                     let! client = Async.FromBeginEnd(
+                          listener.BeginAcceptTcpClient,
+                          listener.EndAcceptTcpClient)
+                     client.NoDelay <- true
+                     runWorkers client ctrl ct |> ignore
             finally
                 listener.Stop()
         }
@@ -90,8 +89,8 @@ module Server =
         | err ->
             failwithf "ERROR: %s" err.Message
 
-        Async.Start(acceptLoop listener token controller, token)
-        Async.Start(heartbeat 1000 token controller, token)
+        Async.StartImmediate(acceptLoop listener token controller, token)
+        Async.StartImmediate(heartbeat 1000 token controller, token)
 
         { new IDisposable with
             member x.Dispose() = cts.Cancel() }
