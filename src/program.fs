@@ -8,7 +8,8 @@ module Program =
         let echo = fun x -> x
         try
             Stream.protocol <- echo
-            Server.start "0.0.0.0" 1900
+            use dispose = Server.start "0.0.0.0" 1900
+            System.Threading.Thread.Sleep -1
         with exn ->
             printfn "EXIT: %A" exn.Message
             exitCode <- 1

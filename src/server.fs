@@ -43,15 +43,15 @@ module Server =
                 sup.Post(Tick)
         }
 
-    let acceptLoop (lst: TcpListener) (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
+    let listen (listener: TcpListener) (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
                 while not ct.IsCancellationRequested do
-                    let! client = Async.FromBeginEnd(lst.BeginAcceptTcpClient, lst.EndAcceptTcpClient)
+                    let! client = listener.AcceptTcpClientAsync() |> Async.AwaitTask
                     client.NoDelay <- true
                     startClient client sup ct |> ignore
             finally
-                lst.Stop()
+                listener.Stop()
         }
 
     let startSupervisor (ct: CancellationToken) =
@@ -76,7 +76,7 @@ module Server =
             cancellationToken = ct
         )
 
-    let startServer (addr: string) (port: int) =
+    let start (addr: string) (port: int) =
         let cts = new CancellationTokenSource()
         let token = cts.Token
         let sup = startSupervisor token
@@ -88,12 +88,8 @@ module Server =
         | :? SocketException -> failwithf "ERROR: %s/%i is using by another program" addr port
         | err -> failwithf "ERROR: %s" err.Message
 
-        Async.StartImmediate(acceptLoop listener token sup, token)
-        Async.StartImmediate(heartbeat 1000 token sup, token)
+        Async.StartImmediate(listen listener token sup, token)
+        Async.StartImmediate(heartbeat 10000 token sup, token)
 
         { new IDisposable with
             member x.Dispose() = cts.Cancel() }
-
-    let start (addr: string) (port: int) =
-        use dispose = startServer addr port
-        Thread.Sleep -1
