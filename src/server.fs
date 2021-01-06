@@ -21,9 +21,9 @@ module Server =
                     let bytes = Array.create size (byte 0)
                     let! len = ns.ReadAsync(bytes, 0, bytes.Length) |> Async.AwaitTask
                     let lines = getLines bytes len
-                    match (isWebSocketsUpgrade lines, wsResponse lines) with
-                    | (true, upgrade) ->
-                        do! ns.AsyncWrite upgrade
+                    match isWebSocketsUpgrade lines with
+                    | true ->
+                        do! ns.AsyncWrite (handshake lines)
                         let ws =
                             WebSocket.CreateFromStream(
                                 (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))

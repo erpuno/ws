@@ -32,23 +32,16 @@ module RFC6455 =
         else
             [||]
 
-    let calcWSAccept6455 (secWebSocketKey: string) =
-        secWebSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-        |> Encoding.ASCII.GetBytes
-        |> SHA1CryptoServiceProvider.Create().ComputeHash
-        |> Convert.ToBase64String
-
     let createAcceptString6455 acceptCode =
         "HTTP/1.1 101 Switching Protocols\r\n" +
         "Upgrade: websocket\r\n" +
         "Connection: Upgrade\r\n" +
         "Sec-WebSocket-Accept: " + acceptCode + "\r\n\r\n"
 
-    let wsResponse lines =
-        (match lines with
-         | [||] -> ""
-         | _ ->
-             getKey "Sec-WebSocket-Key:" lines
-             |> calcWSAccept6455
-             |> createAcceptString6455)
+    let handshake lines =
+        (getKey "Sec-WebSocket-Key:" lines) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+        |> Encoding.ASCII.GetBytes
+        |> SHA1CryptoServiceProvider.Create().ComputeHash
+        |> Convert.ToBase64String
+        |> createAcceptString6455
         |> Encoding.ASCII.GetBytes
