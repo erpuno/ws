@@ -19,18 +19,12 @@ module Server =
                     let ns = tcp.GetStream()
                     let size = tcp.ReceiveBufferSize
                     let bytes = Array.create size (byte 0)
-
-                    let! len =
-                        ns.ReadAsync(bytes, 0, bytes.Length)
-                        |> Async.AwaitTask
-
-                    match webSocket (getLines bytes len) with
+                    let! len = ns.ReadAsync(bytes, 0, bytes.Length) |> Async.AwaitTask
+                    let lines = getLines bytes len
+                    match (isWebSocketsUpgrade lines, wsResponse lines) with
                     | (true, upgrade) ->
                         do! ns.AsyncWrite upgrade
-
-                        let ws =
-                            WebSocket.CreateFromStream((ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
-
+                        let ws = WebSocket.CreateFromStream((ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
                         ctrl.Post(Connect(inbox, ws))
                         Async.StartImmediate(runTelemetry ws inbox ct ctrl, ct)
                         Async.StartImmediate(runLoop ws size ct ctrl, ct)

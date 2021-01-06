@@ -60,6 +60,3 @@ module RFC6455 =
              |> calcWSAccept6455
              |> createAcceptString6455)
         |> Encoding.ASCII.GetBytes
-
-    let webSocket (lines: string array) =
-        (isWebSocketsUpgrade lines, wsResponse lines)
