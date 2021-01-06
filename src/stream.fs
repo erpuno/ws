@@ -13,9 +13,9 @@ module Stream =
     let mutable protocol: byte [] -> byte [] = fun x -> x
 
 
-    let send (ns: WebSocket) (ct: CancellationToken) (bytes: byte []) =
+    let send (ws: WebSocket) (ct: CancellationToken) (bytes: byte []) =
         async {
-            ns.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
+            ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
             |> ignore
         }
 

@@ -24,8 +24,9 @@ module Server =
                     match (isWebSocketsUpgrade lines, wsResponse lines) with
                     | (true, upgrade) ->
                         do! ns.AsyncWrite upgrade
-                        let ws = WebSocket.CreateFromStream(
-                            (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
+                        let ws =
+                            WebSocket.CreateFromStream(
+                                (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
 
                         ctrl.Post(Connect(inbox, ws))
                         Async.StartImmediate(runTelemetry ws inbox ct ctrl, ct)

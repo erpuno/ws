@@ -8,10 +8,6 @@ open System.Security.Cryptography
 [<AutoOpen>]
 module RFC6455 =
 
-    let guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-    let endOfLine = "\r\n"
-    let line txt = txt + endOfLine
-
     let getKey (key: String) arr =
         try
             let f (s: String) = s.StartsWith(key)
@@ -25,7 +21,6 @@ module RFC6455 =
         |> Array.map
             (fun x ->
                 lines
-
                 |> Array.exists (fun y -> x.ToLower() = y.ToLower()))
         |> Array.reduce (fun x y -> x && y)
 
@@ -33,24 +28,21 @@ module RFC6455 =
         if len > 8 then
             bytes.[..(len - 9)]
             |> UTF8Encoding.UTF8.GetString
-            |> fun hs -> hs.Split([| endOfLine |], StringSplitOptions.RemoveEmptyEntries)
+            |> fun hs -> hs.Split([| "\r\n" |], StringSplitOptions.RemoveEmptyEntries)
         else
             [||]
 
     let calcWSAccept6455 (secWebSocketKey: string) =
-        let sha1 = SHA1CryptoServiceProvider.Create()
-
-        secWebSocketKey + guid
+        secWebSocketKey + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         |> Encoding.ASCII.GetBytes
-        |> sha1.ComputeHash
+        |> SHA1CryptoServiceProvider.Create().ComputeHash
         |> Convert.ToBase64String
 
     let createAcceptString6455 acceptCode =
-        line "HTTP/1.1 101 Switching Protocols"
-        + line "Upgrade: websocket"
-        + line "Connection: Upgrade"
-        + line ("Sec-WebSocket-Accept: " + acceptCode)
-        + line ""
+        "HTTP/1.1 101 Switching Protocols\r\n" +
+        "Upgrade: websocket\r\n" +
+        "Connection: Upgrade\r\n" +
+        ("Sec-WebSocket-Accept: " + acceptCode) + "\r\n\r\n"
 
     let wsResponse lines =
         (match lines with
