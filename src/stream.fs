@@ -18,7 +18,7 @@ module Stream =
             |> ignore
         }
 
-    let runTelemetry (ws: WebSocket) (inbox: MailboxProcessor<Payload>)
+    let telemetry (ws: WebSocket) (inbox: MailboxProcessor<Payload>)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
@@ -32,11 +32,11 @@ module Stream =
                 |> ignore
         }
 
-    let runLoop (ws: WebSocket) (size: int)
+    let looper (ws: WebSocket) (bufferSize: int)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
-                let mutable bytes = Array.create size (byte 0)
+                let mutable bytes = Array.create bufferSize (byte 0)
                 while not ct.IsCancellationRequested do
                     let! (result: WebSocketReceiveResult) =
                         ws.ReceiveAsync(ArraySegment<byte>(bytes), ct)

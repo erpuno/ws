@@ -29,8 +29,8 @@ module Server =
                                 (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
 
                         sup.Post(Connect(inbox, ws))
-                        Async.StartImmediate(runTelemetry ws inbox ct sup, ct)
-                        Async.StartImmediate(runLoop ws size ct sup, ct)
+                        Async.StartImmediate(telemetry ws inbox ct sup, ct)
+                        Async.StartImmediate(looper ws size ct sup, ct)
                     | _ -> tcp.Close()
                 }),
             cancellationToken = ct
