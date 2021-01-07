@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FSharp.Core" Version="5.0.0" />
     <Compile Include="src/telemetry.fs" />
     <Compile Include="src/6455.fs" />
     <Compile Include="src/stream.fs" />
