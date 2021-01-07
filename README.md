@@ -19,7 +19,7 @@ Run
 ```
 $ bin/Debug/net5.0/ws
 N2O/F# WebSocket Server 1.0
-[smp] [cpu:12] [io:12]
+[smp] [cpu:4] [io:4]
 ```
 
 Connect

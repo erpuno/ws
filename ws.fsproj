@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Author>Namdak Tonpa</Author>
+    <Authors>Namdak Tonpa</Authors>
+    <Company>INFOTECH SE</Company>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <UseAppHost>true</UseAppHost>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
+    <PackageTags>WebSockets;Async;MailboxProcessor</PackageTags>
+    <Description>High-performance, idiomatic, zero-dependency, Async-based, WebSocket server with supervision and ticker in 200 LOC.</Description>
   </PropertyGroup>
 
   <ItemGroup>
