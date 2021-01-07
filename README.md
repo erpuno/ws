@@ -1,7 +1,7 @@
 F# WebSocket Server
 ===================
 
-[![Actions Status](https://github.com/erpuno/ws/workflows/mix/badge.svg)](https://github.com/erpuno/ws/actions)
+[![Actions Status](https://github.com/erpuno/ws/workflows/Build%20and%20Test/badge.svg?branch=master)](https://github.com/erpuno/ws/actions)
 [![NuGet version (ws)](https://img.shields.io/nuget/v/ws.svg?style=flat-square)](https://www.nuget.org/packages/ws/)
 
 MailboxProcessor/Async-based WebSocket server with supervision and ticker in 200 LOC.
