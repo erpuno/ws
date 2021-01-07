@@ -46,13 +46,10 @@ module Server =
 
     let listen (listener: TcpListener) (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
-            try
-                while not ct.IsCancellationRequested do
-                    let! client = listener.AcceptTcpClientAsync() |> Async.AwaitTask
-                    client.NoDelay <- true
-                    startClient client sup ct |> ignore
-            finally
-                listener.Stop()
+            while not ct.IsCancellationRequested do
+                let! client = listener.AcceptTcpClientAsync() |> Async.AwaitTask
+                client.NoDelay <- true
+                startClient client sup ct |> ignore
         }
 
     let startSupervisor (ct: CancellationToken) =
