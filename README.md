@@ -3,7 +3,7 @@ F# WebSocket Server
 
 [![NuGet version (ws)](https://img.shields.io/nuget/v/ws.svg?style=flat-square)](https://www.nuget.org/packages/ws/)
 
-MailboxProcessor/Async-based WebSocket server with supervision and server-initiated pings in 200 LOC.
+MailboxProcessor/Async-based WebSocket server with supervision and ticker in 200 LOC.
 
 Build
 -----
