@@ -38,13 +38,13 @@ $ tcpkali -c4 --ws --message "PING" \
 MacBook Air 2018
 
 ```
-Total data sent:     19.7 MiB (20683996 bytes)
-Total data received: 8.9 MiB (9367440 bytes)
-Bandwidth per channel: 6.009⇅ Mbps (751.2 kBps)
-Aggregate bandwidth: 7.493↓, 16.544↑ Mbps
-Packet rate estimate: 46817.0↓, 1479.5↑ (1↓, 14↑ TCP MSS/op)
-First byte latency at percentiles: 9.5/32.2 ms (50/100%)
-Test duration: 10.0018 s.
+Total data sent:     15.6 MiB (16390020 bytes)
+Total data received: 8.3 MiB (8721138 bytes)
+Bandwidth per channel: 10.038⇅ Mbps (1254.8 kBps)
+Aggregate bandwidth: 6.973↓, 13.104↑ Mbps
+Packet rate estimate: 70377.7↓, 1141.7↑ (1↓, 17↑ TCP MSS/op)
+First byte latency at percentiles: 32.5/46.0 ms (50/100%)
+Test duration: 10.006 s.
 ```
 
 Credits
