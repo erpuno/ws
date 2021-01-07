@@ -23,7 +23,10 @@ Connect
 -------
 
 ```
-$ wscat -c ws://localhost:1900/n2o
+$ wscat -c 127.0.0.1:1900/n2o
+connected (press CTRL+C to quit)
+> ECHO
+< ECHO
 ```
 
 Benchmark
