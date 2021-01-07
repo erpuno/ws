@@ -12,6 +12,8 @@ open System.Threading
 [<AutoOpen>]
 module Server =
 
+    let mutable ticker = false // enable server-initiated Tick messages
+
     let startClient (tcp: TcpClient) (sup: MailboxProcessor<Sup>) (ct: CancellationToken) =
         MailboxProcessor.Start(
             (fun (inbox: MailboxProcessor<Payload>) ->
@@ -28,7 +30,7 @@ module Server =
                             WebSocket.CreateFromStream(
                                 (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
                         sup.Post(Connect(inbox, ws))
-                        Async.StartImmediate(telemetry ws inbox ct sup, ct)
+                        if ticker then Async.StartImmediate(telemetry ws inbox ct sup, ct)
                         return! looper ws size ct sup
                     | _ -> tcp.Close()
                 }),
@@ -59,15 +61,10 @@ module Server =
                 let listeners = ResizeArray<_>()
                 async {
                     while not ct.IsCancellationRequested do
-                        let! msg = inbox.Receive()
-                        match msg with
-                        | Close ws -> printfn "Close: %A" ws
-                        | Connect (l, ns) ->
-                            printfn "Connect: %A %A" l ns
-                            listeners.Add(l)
-                        | Disconnect l ->
-                            Console.WriteLine "Disconnect"
-                            listeners.Remove(l) |> ignore
+                        match! inbox.Receive() with
+                        | Close ws -> ()
+                        | Connect (l, ns) -> listeners.Add(l)
+                        | Disconnect l -> listeners.Remove(l) |> ignore
                         | Tick -> listeners.ForEach(fun l -> l.Post Ping)
                 }),
             cancellationToken = ct
@@ -86,7 +83,7 @@ module Server =
         | err -> failwithf "ERROR: %s" err.Message
 
         Async.StartImmediate(listen listener token sup, token)
-        Async.StartImmediate(heartbeat 10000 token sup, token)
+        if ticker then Async.StartImmediate(heartbeat 10000 token sup, token)
 
         { new IDisposable with
             member x.Dispose() = cts.Cancel() }

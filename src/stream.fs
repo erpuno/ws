@@ -38,7 +38,7 @@ module Stream =
             try
                 let mutable bytes = Array.create bufferSize (byte 0)
                 while not ct.IsCancellationRequested do
-                    let! (result: WebSocketReceiveResult) =
+                    let! result =
                         ws.ReceiveAsync(ArraySegment<byte>(bytes), ct)
                         |> Async.AwaitTask
 
