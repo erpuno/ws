@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="src/telemetry.fs" />
+    <Compile Include="src/types.fs" />
     <Compile Include="src/6455.fs" />
     <Compile Include="src/stream.fs" />
     <Compile Include="src/server.fs" />

@@ -6,7 +6,7 @@ open System.Net.WebSockets
 // Most minimal type system for F# WebSocket server infrastructure
 
 [<AutoOpen>]
-module Telemetry =
+module Types =
 
     type Payload =
         | Bin of byte []
