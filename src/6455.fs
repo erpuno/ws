@@ -45,3 +45,96 @@ module RFC6455 =
         |> Convert.ToBase64String
         |> acceptString6455
         |> Encoding.ASCII.GetBytes
+
+    type WebsocketFrame =
+        | ContinuationFrame  //%x0
+        | TextFrame          //%x1
+        | BinaryFrame        //%x2
+        | ReservedNonControl //%x3-7
+        | ConnectionClosed   //%x8
+        | Ping               //%x9
+        | Pong               //%xA
+        | ReservedControl    //%xB-F
+
+    let swapEndian (bs : byte array) = if BitConverter.IsLittleEndian then Array.rev bs else bs
+
+    let decodeFrame (stream:Stream) =
+        async {
+            let! firstByte_t = stream.AsyncRead(1)
+            let firstByte = firstByte_t.[0]
+            let final = firstByte &&& 128uy <> 0uy
+            let opcode =
+                match firstByte &&& 15uy with
+                | 0uy -> ContinuationFrame
+                | 1uy -> TextFrame
+                | 2uy -> BinaryFrame
+                | 3uy | 4uy | 5uy | 6uy | 7uy -> ReservedNonControl
+                | 8uy -> ConnectionClosed
+                | 9uy -> Ping
+                | 10uy -> Pong
+                | 11uy | 12uy | 13uy | 14uy | 15uy -> ReservedControl
+                | _ -> failwith "given the mask above this cannot happen"
+
+            let! secondByte_t = stream.AsyncRead(1)
+            let secondByte = secondByte_t.[0]
+            let mask = secondByte &&& 128uy <> 0uy
+
+            let! payloadLength =
+                match secondByte &&& 127uy with
+                | 127uy ->
+                    async {
+                        let! int64Bytes = stream.AsyncRead(8)
+                        return BitConverter.ToUInt64(int64Bytes |> swapEndian, 0)
+                    }
+                | 126uy ->
+                    async {
+                        let! int16Bytes = stream.AsyncRead(2)
+                        return uint64 (BitConverter.ToUInt16(int16Bytes |> swapEndian, 0))
+                    }
+                | x -> async { return uint64 (Convert.ToUInt16(x)) }
+
+            let payloadLength' = int32 payloadLength
+
+            let! data =
+                if mask
+                then
+                    async {
+                        let! mask = stream.AsyncRead(4)
+                        let! data = stream.AsyncRead(payloadLength')
+                        return data |> Array.mapi (fun i b -> b ^^^ mask.[i % 4])
+                    }
+                else
+                    stream.AsyncRead(payloadLength')
+            return (opcode, data, final)
+        }
+
+
+    let encodeFrame (opcode : WebsocketFrame, data:byte array, final : bool, mask : uint32 option) =
+        let firstByte =
+            match opcode with
+            | ContinuationFrame -> 0uy
+            | TextFrame -> 1uy
+            | BinaryFrame -> 2uy
+            | ReservedNonControl -> failwith "Use of reserved unsuported opcode \"ReservedNonControl\""
+            | ConnectionClosed -> 8uy
+            | Ping -> 9uy
+            | Pong -> 10uy
+            | ReservedControl -> failwith "Use of reserved unsuported opcode \"ReservedControl\""
+            |> fun x -> if final then x  ||| 128uy else x
+
+        let length = data |> Array.length // NOTE  Length cannot be > int32 but can be > int16
+        let lengthBytes =
+            if length < 126 then [Convert.ToByte(length)]
+            else if length < int32 UInt16.MaxValue then 126uy :: (BitConverter.GetBytes(length) |> swapEndian |> Seq.skip 2 |> Seq.toList)
+            else 127uy :: ([0uy;0uy;0uy;0uy] @ ((BitConverter.GetBytes(length) |> swapEndian |> Seq.toList)))
+            |> function
+            | (x::xs) as ys -> if mask.IsSome then (x ||| 128uy) :: xs else ys // Set the mask bit if one is available
+            | _ -> failwith "Should not happen - should have at least one byte in the list"
+
+        let maskedData =
+            match mask with
+            | None -> data
+            | Some(m) ->
+                let maskBits = BitConverter.GetBytes(m) |> swapEndian
+                Array.append maskBits (data |> Array.mapi (fun i b -> b ^^^ maskBits.[i % 4]))
+        Array.append (firstByte :: lengthBytes |> List.toArray) maskedData

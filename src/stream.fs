@@ -1,9 +1,9 @@
 namespace N2O
 
 open System
+open System.Net.Sockets
 open System.Text
 open System.Threading
-open System.Net.WebSockets
 
 // MailboxProcessor-based Tick pusher and pure Async WebSocket looper
 
@@ -12,45 +12,37 @@ module Stream =
 
     let mutable protocol: byte [] -> byte [] = fun x -> x
 
-    let send (ws: WebSocket) (ct: CancellationToken) (bytes: byte []) =
-        async {
-            ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
-            |> ignore
-        }
+    let send (ns: NetworkStream) (data: byte []) =
+        async { do! ns.AsyncWrite(encodeFrame (BinaryFrame, data, true, None)) }
 
-    let telemetry (ws: WebSocket) (inbox: MailboxProcessor<Payload>)
+    let telemetry (ns: NetworkStream) (inbox: MailboxProcessor<Payload>)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
                 while not ct.IsCancellationRequested do
                     let! _ = inbox.Receive()
-                    do! send ws ct ("TICK" |> Encoding.ASCII.GetBytes)
+                    do! send ns ("TICK" |> Encoding.ASCII.GetBytes)
             finally
                 sup.Post(Disconnect <| inbox)
 
-                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "TELEMETRY", ct)
+                ns.Close()
                 |> ignore
         }
 
-    let looper (ws: WebSocket) (bufferSize: int)
+    let looper (ns: NetworkStream) (bufferSize: int)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
                 let mutable bytes = Array.create bufferSize (byte 0)
                 while not ct.IsCancellationRequested do
-                    let! result =
-                        ws.ReceiveAsync(ArraySegment<byte>(bytes), ct)
-                        |> Async.AwaitTask
-
-                    match (result.MessageType) with
-                    | WebSocketMessageType.Text -> do! send ws ct (protocol bytes.[0..result.Count])
-                    | WebSocketMessageType.Binary -> do! send ws ct (protocol bytes.[0..result.Count])
-                    | WebSocketMessageType.Close -> ()
-                    | _ -> printfn "PROTOCOL VIOLATION"
+                    match! decodeFrame(ns) with
+                    | (TextFrame,   data, true) -> do! send ns (protocol data)
+                    | (BinaryFrame, data, true) -> do! send ns (protocol data)
+                    | _ -> ()
             finally
-                sup.Post(Close <| ws)
+                sup.Post(Close <| ns)
 
-                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER", ct)
+                ns.Close()
                 |> ignore
         }
 

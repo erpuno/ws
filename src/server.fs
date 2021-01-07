@@ -4,7 +4,6 @@ open System
 open System.IO
 open System.Net
 open System.Net.Sockets
-open System.Net.WebSockets
 open System.Threading
 
 // Pure MailboxProcessor-based WebSocket Server
@@ -26,12 +25,9 @@ module Server =
                     match isWebSocketsUpgrade lines with
                     | true ->
                         do! ns.AsyncWrite (handshake lines)
-                        let ws =
-                            WebSocket.CreateFromStream(
-                                (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
-                        sup.Post(Connect(inbox, ws))
-                        if ticker then Async.StartImmediate(telemetry ws inbox ct sup, ct)
-                        return! looper ws size ct sup
+                        sup.Post(Connect(inbox, ns))
+                        if ticker then Async.StartImmediate(telemetry ns inbox ct sup, ct)
+                        return! looper ns size ct sup
                     | _ -> tcp.Close()
                 }),
             cancellationToken = ct
@@ -65,7 +61,7 @@ module Server =
                         | Close ws -> ()
                         | Connect (l, ns) -> listeners.Add(l)
                         | Disconnect l -> listeners.Remove(l) |> ignore
-                        | Tick -> listeners.ForEach(fun l -> l.Post Ping)
+                        | Tick -> listeners.ForEach(fun l -> l.Post Payload.Ping)
                 }),
             cancellationToken = ct
         )

@@ -1,7 +1,7 @@
 namespace N2O
 
 open System
-open System.Net.WebSockets
+open System.Net.Sockets
 
 // Most minimal type system for F# WebSocket server infrastructure
 
@@ -13,7 +13,7 @@ module Telemetry =
         | Ping
 
     type Sup =
-        | Connect of MailboxProcessor<Payload> * WebSocket
+        | Connect of MailboxProcessor<Payload> * NetworkStream
         | Disconnect of MailboxProcessor<Payload>
-        | Close of WebSocket
+        | Close of NetworkStream
         | Tick
