@@ -12,7 +12,7 @@ open System.Threading
 [<AutoOpen>]
 module Server =
 
-    let mutable ticker = false // enable server-initiated Tick messages
+    let mutable ticker = true // enable server-initiated Tick messages
 
     let startClient (tcp: TcpClient) (sup: MailboxProcessor<Sup>) (ct: CancellationToken) =
         MailboxProcessor.Start(

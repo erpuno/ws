@@ -7,6 +7,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <UseAppHost>true</UseAppHost>
     <Version>1.0.4</Version>
+    <IncludeSource>true</IncludeSource>
     <PackageTags>WebSockets;Async;MailboxProcessor</PackageTags>
     <PackageDescription>F# WebSocket Server</PackageDescription>
     <RepositoryUrl>https://github.com/erpuno/ws</RepositoryUrl>
