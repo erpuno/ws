@@ -12,6 +12,7 @@ open System.Threading
 [<AutoOpen>]
 module Server =
 
+    let mutable interval = 5000
     let mutable ticker = true // enable server-initiated Tick messages
 
     let startClient (tcp: TcpClient) (sup: MailboxProcessor<Sup>) (ct: CancellationToken) =
@@ -80,7 +81,7 @@ module Server =
         | err -> failwithf "ERROR: %s" err.Message
 
         Async.StartImmediate(listen listener token sup, token)
-        if ticker then Async.StartImmediate(heartbeat 10000 token sup, token)
+        if ticker then Async.StartImmediate(heartbeat interval token sup, token)
 
         { new IDisposable with
             member x.Dispose() = cts.Cancel() }

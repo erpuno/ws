@@ -52,10 +52,11 @@ module Stream =
 
                     match (result.MessageType) with
                     | WebSocketMessageType.Text ->
-                      do! protocol (Text (Encoding.UTF8.GetString recv))
-                          |> send ws ct
+                        do! protocol (Text (Encoding.UTF8.GetString recv))
+                            |> send ws ct
                     | WebSocketMessageType.Binary ->
-                      do! send ws ct (protocol (Bin recv))
+                        do! (protocol (Bin recv))
+                            |> send ws ct
                     | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
             finally
