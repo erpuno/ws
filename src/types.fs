@@ -1,6 +1,5 @@
 namespace N2O
 
-open System
 open System.Net.WebSockets
 
 // Most minimal type system for F# WebSocket server infrastructure
@@ -9,7 +8,7 @@ open System.Net.WebSockets
 module Types =
 
     type Msg =
-        | Bin of byte []
+        | Bin of byte array
         | Text of string
         | Nope
 
