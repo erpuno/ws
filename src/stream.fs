@@ -10,7 +10,7 @@ open System.Net.WebSockets
 [<AutoOpen>]
 module Stream =
 
-    let mutable protocol: Msg -> Msg = fun x -> x
+    let mutable protocol: Msg -> Msg = id
 
     let sendBytes (ws: WebSocket) ct bytes =
         ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
