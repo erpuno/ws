@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Authors>Namdak Tonpa;Igor Gorodetsky</Authors>
+    <Authors>Namdak Tonpa;Igor Gorodetsky;Siegmentation Fault</Authors>
     <Company>INFOTECH SE</Company>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <UseAppHost>true</UseAppHost>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <IncludeSource>true</IncludeSource>
     <PackageTags>WebSockets;Async;MailboxProcessor</PackageTags>
     <PackageDescription>F# WebSocket Server</PackageDescription>
