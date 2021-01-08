@@ -55,7 +55,7 @@ module Stream =
                         do! protocol (Text (Encoding.UTF8.GetString recv))
                             |> send ws ct
                     | WebSocketMessageType.Binary ->
-                        do! (protocol (Bin recv))
+                        do! protocol (Bin recv)
                             |> send ws ct
                     | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
