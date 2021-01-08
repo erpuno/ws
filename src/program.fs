@@ -17,6 +17,6 @@ module Program =
             use disposing = Server.start "0.0.0.0" port
             System.Threading.Thread.Sleep -1
         with exn ->
-            printfn "EXIT %A" exn.Message
+            printfn "EXIT: %s" exn.Message
             ret <- 1
         ret

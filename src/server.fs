@@ -77,8 +77,10 @@ module Server =
         try
             listener.Start(10)
         with
-        | :? SocketException -> failwithf "ERROR: %s/%i is using by another program" addr port
-        | err -> failwithf "ERROR: %s" err.Message
+            | :? SocketException ->
+                failwithf "%s:%i is using by another program" addr port
+            | err ->
+                failwithf "%s" err.Message
 
         Async.StartImmediate(listen listener token sup, token)
         if ticker then Async.StartImmediate(heartbeat interval token sup, token)
