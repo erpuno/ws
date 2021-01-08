@@ -43,8 +43,8 @@ module Stream =
                         |> Async.AwaitTask
 
                     match (result.MessageType) with
-                    | WebSocketMessageType.Text -> do! send ws ct (protocol bytes.[0..result.Count])
-                    | WebSocketMessageType.Binary -> do! send ws ct (protocol bytes.[0..result.Count])
+                    | WebSocketMessageType.Text -> do! send ws ct (protocol bytes.[0..result.Count-1])
+                    | WebSocketMessageType.Binary -> do! send ws ct (protocol bytes.[0..result.Count-1])
                     | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
             finally
