@@ -8,15 +8,15 @@ open System.Security.Cryptography
 [<AutoOpen>]
 module RFC6455 =
 
+    let beqToLower (x: string) (y: string) =
+        x.ToLower() = y.ToLower()
+
     let isWebSocketsUpgrade (lines: string array) =
         [| "GET /n2o HTTP/1.1"
            "Upgrade: websocket"
            "Connection: Upgrade" |]
-        |> Array.map
-            (fun x ->
-                lines
-                |> Array.exists (fun y -> x.ToLower() = y.ToLower()))
-        |> Array.reduce (fun x y -> x && y)
+        |> Array.map (fun x -> Array.exists (beqToLower x) lines)
+        |> Array.reduce (&&)
 
     let getKey (key: String) arr =
         try
