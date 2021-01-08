@@ -10,21 +10,26 @@ open System.Net.WebSockets
 [<AutoOpen>]
 module Stream =
 
-    let mutable protocol: byte [] -> byte [] = fun x -> x
+    let mutable protocol: Msg -> Msg = fun x -> x
 
-    let send (ws: WebSocket) (ct: CancellationToken) (bytes: byte []) =
+    let send (ws: WebSocket) (ct: CancellationToken) (msg: Msg) =
+        let bytes =
+            match msg with
+            | Text text -> Encoding.UTF8.GetBytes text
+            | Bin arr -> arr
+            | Ping -> Encoding.UTF8.GetBytes "PING"
         async {
             ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
             |> ignore
         }
 
-    let telemetry (ws: WebSocket) (inbox: MailboxProcessor<Payload>)
+    let telemetry (ws: WebSocket) (inbox: MailboxProcessor<Msg>)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
                 while not ct.IsCancellationRequested do
                     let! _ = inbox.Receive()
-                    do! send ws ct ("TICK" |> Encoding.ASCII.GetBytes)
+                    do! send ws ct (Text "TICK")
             finally
                 sup.Post(Disconnect <| inbox)
 
@@ -42,9 +47,14 @@ module Stream =
                         ws.ReceiveAsync(ArraySegment<byte>(bytes), ct)
                         |> Async.AwaitTask
 
+                    let recv = bytes.[0..result.Count - 1]
+
                     match (result.MessageType) with
-                    | WebSocketMessageType.Text -> do! send ws ct (protocol bytes.[0..result.Count-1])
-                    | WebSocketMessageType.Binary -> do! send ws ct (protocol bytes.[0..result.Count-1])
+                    | WebSocketMessageType.Text ->
+                      do! protocol (Text (Encoding.UTF8.GetString recv))
+                          |> send ws ct
+                    | WebSocketMessageType.Binary ->
+                      do! send ws ct (protocol (Bin recv))
                     | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
             finally

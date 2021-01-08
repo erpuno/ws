@@ -8,12 +8,13 @@ open System.Net.WebSockets
 [<AutoOpen>]
 module Types =
 
-    type Payload =
+    type Msg =
         | Bin of byte []
+        | Text of string
         | Ping
 
     type Sup =
-        | Connect of MailboxProcessor<Payload> * WebSocket
-        | Disconnect of MailboxProcessor<Payload>
+        | Connect of MailboxProcessor<Msg> * WebSocket
+        | Disconnect of MailboxProcessor<Msg>
         | Close of WebSocket
         | Tick

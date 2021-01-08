@@ -16,7 +16,7 @@ module Server =
 
     let startClient (tcp: TcpClient) (sup: MailboxProcessor<Sup>) (ct: CancellationToken) =
         MailboxProcessor.Start(
-            (fun (inbox: MailboxProcessor<Payload>) ->
+            (fun (inbox: MailboxProcessor<Msg>) ->
                 async {
                     let ns = tcp.GetStream()
                     let size = tcp.ReceiveBufferSize
