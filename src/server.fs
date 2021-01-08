@@ -62,7 +62,7 @@ module Server =
                         | Close ws -> ()
                         | Connect (l, ns) -> listeners.Add(l)
                         | Disconnect l -> listeners.Remove(l) |> ignore
-                        | Tick -> listeners.ForEach(fun l -> l.Post Ping)
+                        | Tick -> listeners.ForEach(fun l -> l.Post Nope)
                 }),
             cancellationToken = ct
         )

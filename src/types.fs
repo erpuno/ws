@@ -11,7 +11,7 @@ module Types =
     type Msg =
         | Bin of byte []
         | Text of string
-        | Ping
+        | Nope
 
     type Sup =
         | Connect of MailboxProcessor<Msg> * WebSocket

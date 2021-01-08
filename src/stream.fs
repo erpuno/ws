@@ -12,15 +12,16 @@ module Stream =
 
     let mutable protocol: Msg -> Msg = fun x -> x
 
-    let send (ws: WebSocket) (ct: CancellationToken) (msg: Msg) =
-        let bytes =
-            match msg with
-            | Text text -> Encoding.UTF8.GetBytes text
-            | Bin arr -> arr
-            | Ping -> Encoding.UTF8.GetBytes "PING"
+    let sendBytes (ws: WebSocket) ct bytes =
+        ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
+        |> ignore
+
+    let send ws ct (msg: Msg) =
         async {
-            ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
-            |> ignore
+            match msg with
+            | Text text -> sendBytes ws ct (Encoding.UTF8.GetBytes text)
+            | Bin arr -> sendBytes ws ct arr
+            | Nope -> ()
         }
 
     let telemetry (ws: WebSocket) (inbox: MailboxProcessor<Msg>)
