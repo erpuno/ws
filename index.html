@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="" />
+<meta name="author" content="Maxim Sokhatsky" />
+<title>WS</title>
+<link rel="stylesheet" href="https://n2o.dev/blank.css?x=15" />
+<link rel="stylesheet" href="https://n2o.dev/zima.css?x=15" />
+<link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href=".img/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16x16.png" />
+<link rel="manifest" href="img/site.webmanifest" />
+</head>
+<body>
+<nav>
+  <a href="https://erp.uno">ERP</a>
+  <a href="https://ws.erp.uno" style="background:#ededed;">WS</a>
+</nav>
+<header>
+    <a href="https://github.com/erpuno/ws"><img src="https://crm.erp.uno/img/logo.svg" /></a>
+    <h1>WS</h1>
+</header>
+<aside>
+  <article>
+    <section>
+      <h3>SYNOPSIS</h3>
+      <div>High-performance, idiomatic, zero-dependency, Async-based, WebSocket server with supervision and ticker in 200 LOC.
+         WS is an embeddable WebSocket message protocol loop library for F#.
+
+      </div><br/>
+      <div>
+        JAN 2021 © <a href="https://github.com/5HT">5HT</a> <a href="https://5ht.co/license.htm">ISC</a><br />
+        VER 1.0
+      </div>
+    </section>
+
+    <section>
+      <a name="plugin"></a><h3>USAGE</h3>
+      <div>Get the rebar dependency and compile it:</div><br/>
+      <figure>
+        <code>
+  $ mad get n2o
+  $ cd deps/n2o
+  $ mad dep com pla rep
+        </code>
+      </figure>
+    </section>
+  </article>
+</aside>
+<main>
+<article>
+  <secton>
+    <a name="endpoint"></a><h3>SAMPLE</h3>
+    <p>
+      Here is a minimal echo server.
+    </p>
+    <figure>
+    <code>
+open N2O
+
+module Program =
+
+    [<EntryPoint>]
+    let main _ =
+        let mutable ret = 0
+        let echo = fun x -> x
+        try
+            Stream.protocol &lt;- echo
+            use disposing = Server.start "0.0.0.0" 1900
+            System.Threading.Thread.Sleep -1
+        with exn ->
+            printfn "EXIT: %s" exn.Message
+            ret &lt;- 1
+        ret
+    </code>
+    </figure>
+  </section>
+</article>
+</main>
+<footer>Made with <span class="heart">❤</span> to Erlang</footer>
+<script>function drop(){document.getElementById("dropdown").classList.toggle("show");}</script>
+</body>
+</html>
