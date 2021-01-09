@@ -60,9 +60,7 @@
     [<EntryPoint>]
     let main _ =
         let mutable ret = 0
-        let echo = fun x -> x
-        try
-            Stream.protocol &lt;- echo
+        try Stream.protocol &lt;- fun x -> x
             use disposing = Server.start "0.0.0.0" 1900
             System.Threading.Thread.Sleep -1
         with exn ->
