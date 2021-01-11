@@ -5,6 +5,8 @@ open System.IO
 open System.Text
 open System.Security.Cryptography
 
+// RFC 6455 WebSocket handshake
+
 [<AutoOpen>]
 module RFC6455 =
 
