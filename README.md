@@ -53,6 +53,11 @@ First byte latency at percentiles: 32.5/46.0 ms (50/100%)
 Test duration: 10.006 s.
 ```
 
+Notes
+-----
+
+* [2021-01-04 F# WebSocket Server](https://tonpa.guru/stream/2021/2021-01-04%20F%23%20WebSocket%20Server.htm)
+
 Credits
 -------
 
