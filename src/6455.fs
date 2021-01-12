@@ -10,13 +10,8 @@ open System.Security.Cryptography
 [<AutoOpen>]
 module RFC6455 =
 
-    let isWebSocketsUpgrade (lines: string array) =
-        Array.exists (fun (x:string) -> "upgrade: websocket" = x.ToLower()) lines
-
-    let getKey (key: String) arr =
-        try let f (s: String) = s.StartsWith(key)
-            (Array.find f arr).[key.Length + 1..]
-        with _ -> ""
+    let isWebSocketsUpgrade (req: Req) =
+        req.headers.["upgrade"].ToLower() = "websocket"
 
     let getLines (bytes: Byte []) len =
         if len > 8 then
@@ -32,8 +27,8 @@ module RFC6455 =
         "Connection: Upgrade\r\n" +
         "Sec-WebSocket-Accept: " + acceptCode + "\r\n\r\n"
 
-    let handshake lines =
-        (getKey "Sec-WebSocket-Key:" lines) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+    let handshake (req: Req) =
+        req.headers.["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         |> Encoding.ASCII.GetBytes
         |> SHA1CryptoServiceProvider.Create().ComputeHash
         |> Convert.ToBase64String

@@ -1,6 +1,7 @@
 namespace N2O
 
 open System.Net.WebSockets
+open System.Collections.Specialized
 
 // Most minimal type system for F# WebSocket server infrastructure
 
@@ -17,3 +18,9 @@ module Types =
         | Disconnect of MailboxProcessor<Msg>
         | Close of WebSocket
         | Tick
+
+    type Req = 
+        { path    : string;
+          method  : string;
+          version : string;
+          headers : NameValueCollection }
