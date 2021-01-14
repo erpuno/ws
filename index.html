@@ -49,37 +49,303 @@
 <main>
 <article>
   <section>
-    <h3>SAMPLE</h3>
-    <p>
-      Here is a minimal echo server.
+    <h3>F## WebSocket Server</h3>
+    <h4>Annotation</h4>
+    <p>The idea to write web servers and web frameworks
+       in all languages came to my mind ever since I
+       realized that what I did for the Erlang ecosystem:
+       the direction of frameworks for enterprises under
+       the general brand N2O, and now as part of the <a href="https://erp.uno">erp.uno</a>
+       platform; quite applicable for other languages and
+       platforms as well. This article provides a version
+       of the websocket server for the F # programming language,
+       <a href="https://ws.erp.uno">ws.erp.uno</a>.
+       Package address: <a href="https://nuget.org/packages/ws">nuget.org/packages/ws</a>.
+       Repository address: <a href="https://github.com/erpuno/ws">erpuno/ws</a>.
     </p>
-    <figure>
-    <code>
+    <h4>Foreword</h4>
+
+    <p>
+    <b>Haskell</b>. The first experiment was carried out by Andrey Melnikov
+    as a port for Haskell: <a href="https://github.com/nponeccop/n2o.hs">N2O.HS</a>,
+    later a more complete version with N2O and NITRO expressed in existential signatures
+    was made by Marat Khafizov, who runs the <a href="https://github.com/o3">O3</a> Github
+    organization and the <a herf="https://o3.click">o3.click</a> website.
+    It is completely incomprehensible to me why not a single Haskell programmer,
+    who seems to be supposed to admire minimalism, does not follow this path,
+    but usually looks for the truth in such frameworks as UrWeb, IHP, UnisonWeb.
+    In my opinion, these are all overcomplicated things.</p>
+
+    <p><b>Standard ML</b>. Also for academic purposes, Marat Khafizov made a port
+      of the bundle of the N2O web server and the NITRO web framework into the
+      Standard ML language (both major versions of SML/NJ and MLton) &mdash;
+      this work is presented by the <a href="https://github.com/o1">O1</a> organization on Github.
+      This is the language that I consider appropriate to teach as the first
+      academic programming language (prior to acquaintance with the industrial
+      languages Erlang, F#, Haskell).</p>
+
+    <p><b>Lean</b>. To consolidate my idea and articulate it more clearly and accurately,
+       I asked <a href="https://github.com/forked-from-1kasper">Siegmentation Fault</a>
+       to make a port to an even more formal programming language, the Lean 4 mathematical prover.
+       This version of the N2O web server and the NITRO web framework
+       is presented by Github by the <a href="https://github.com/o89">O98</a>
+       organization and two sites at once: <a href="https://lean4.dev">lean4.dev</a>
+       and <a href="https://bum.pm">bum.pm</a>. The latter is a package manager
+       written in Lean 4, which Aleksandr Temerev from CERN helps us to maintain.
+       Lean 4 N2O projects were liked by Leonardo de Moura, author of Lean and Z3,
+       and we are immensely happy about it.</p>
+
+    <h4>Idiomatic WebSocket server in F#</h4>
+
+    <p>Idiomatic criteria can be perceived differently by everyone,
+       but basically this means a minimum of preludes and a maximum of essence,
+       one way or another, the main mantra of all minimalists in general and N2O
+       infrastructure in particular. So, in the modern criteria for the idiomaticity
+       of a web server for the F # language, I would highlight the following:
+       1) the use of the System.Net.WebSockets system classes, which already
+         provide a buffered encoder and decoder of frames of the RFC 6455 standard;
+       2) the server must be built on Async computer expressins;
+       3) MailboxProcessor should be used to manage asynchronous threads of execution,
+          and not a self-written system of workers, which, although it will help
+          squeeze the latter out of F # (I got 14 million messages per second),
+          will not demonstrate the essence, since it will be a deviation towards runtimes;
+       4) Using the TcpListener and TcpClient, NetworkStream classes. You are not allowed
+          to use anything else!</p>
+
+    <h4>What to read before writing?</h4>
+
+    <p>After a bit of googling, I realized that the Internet lacks an article
+       that describes the history of the concept of asynchronous computation
+       and computational expressions, which are popularly known by the async/await
+       keywords. I see the future article called "Survey of brief Async history",
+       which will show a retrospective of Async technology:
+    </p>
+
+<p>0) J operator 1965; <br>
+1) LISP call/cc 1968; <br>
+2) Erlang 1986; <br>
+3) Concurrent ML 1998; <br>
+4) Haskell async 2004; <br>
+5) C # async yield 2006; <br>
+6) Perl IO: Async 2007; <br>
+7) F # Async 2010 <br>
+8) C # / PHP Async 2012 <br>
+9) Python async 2015 <br>
+10) ECMAScript async 2017</p>
+
+<p>The seminal article on F# async is Leo Gorodinsky's `<b>F# Async Guide</b>`, jet.com.
+   The main book that I would recommend to look through before getting acquainted
+   with F# is `<b>Expert F # 4.0</b>` by the author of the language Don Syme.
+   The main presentation on F# Async, I would call Don Syme's talk at the London
+   meetup &mdash; Some F# for the Erlang programmer. Armed with these documents
+   and this Gist snippet, I went to Lviv to write the most idiomatic websocket server.</p>
+
+    <h4>Showcase</h4>
+
+    <p>As is usually accepted in backtracking systems, Prolog and declarative languages,
+    we will move from the end, namely from the interface that we want to get.
+    I would like the ECHO Server to be an id function.</p>
+
+        <figure>
+        <code>
   open N2O
+
   module Program =
+
     [&lt;EntryPoint>]
     let main _ =
         let mutable ret = 0
+
         try Stream.protocol &lt;- fun x -> x
-            use disposing = Server.start "0.0.0.0" 1900
+            use ws = Server.start "0.0.0.0" 1900
             System.Threading.Thread.Sleep -1
         with exn ->
             printfn "EXIT: %s" exn.Message
             ret &lt;- 1
         ret
-    </code>
-    </figure>
+        </code>
+        </figure>
 
-    <p>Connect with <b>wscat</b> client:.</p>
+<h4>Asynchronous process architecture</h4>
 
-    <figure>
-<code>
-  $ wscat -c 127.0.0.1:1900/n2o
-  connected (press CTRL+C to quit)
-  > ECHO
-  &lt; ECHO
-    </code>
-    </figure>
+    <p>For those familiar with the Erlang/OTP architecture,
+       it is known that designing network applications begins
+       with a tree supervisor of lightweight processes and the
+       protocols that govern their interactions. Child
+       processes usually share CancellationToken lifetime tokens,
+       so that exceptions thrown in parent processes can cancel
+       the entire subprocess tree. Therefore, the process loops
+       contain the expression</p>
+
+        <figure>
+        <code>
+    while not ct.IsCancellationRequested do
+        </code>
+        </figure>
+
+<p>Our websocket server consists of 7 asynchronous processes:</p>
+
+        <figure>
+        <code>
+         [Sup]    [L]*
+        /        /
+ [start]--[S]--[C]*
+        \        \
+         [H]      [T]*
+        </code>
+        </figure>
+
+<p>The legend of this tree is as follows: [start] node is the entry point from
+   which the rest of the asynchronous processes will be born, corresponds to
+   the <b>start</b> function; The [S] node cooperates with the asynchronous process
+   represented by the listen function; [Sup] node corresponds to the
+   <b>startSupervisor</b> function; [C] the node corresponds to the <b>startClient</b>
+   function; [H] node meets the <b>heartbeat</b> function requirement;
+   [L] node matches the <b>loop</b> function; The [T] node meets the <b>telemetry</b>
+   function requirement. An asterisk will denote processes, the number of
+   which depends on the number of active connections: [C]*, [L]*, [T]*.</p>
+
+<h4>Interaction protocols</h4>
+
+    <p>At the moment of birth of the client [C], in the parent process of
+       the server [S], the notification [S] -> [Sup] takes place according
+       to the so-called Supervisor Sup protocol with the same type.
+       The public protocol of the public function Stream.protocol is
+       represented by the Msg type , which is used to control an asynchronous process [L].</p>
+
+    <p>The server ping system is implemented compatible with the Sup
+       and Msg protocols , the heartbit process [H] sends a Tick message
+       at intervals to the supervisor [Sup], which in turn sends broadcasts
+       to all telemetry clients [T] created on the same queue as [C],
+       ie the same protocol.</p>
+
+    <p>Processes [T], [L] and [C] share the WebSocket stream and are all
+       connected to the server's supervisor, notifying it in case of exceptions.</p>
+
+        <figure>
+        <code>
+    type Msg =
+        | Bin of byte array
+        | Text of string
+        | Nope
+
+    type Sup =
+        | Connect of MailboxProcessor&lt;Msg> * WebSocket
+        | Disconnect of MailboxProcessor&lt;Msg>
+        | Close of WebSocket
+        | Tick
+        </code>
+        </figure>
+
+
+<h4>RFC 6455 Handshake</h4>
+
+    <p>Functions for handling HTTP headers. isWebSocketsUpgrade looks
+       for an Upgrade and WebSocket pair in the headers . getLines returns
+       headers as an array of strings, and the getKey function returns the
+       header value by its key.</p>
+
+        <figure>
+        <code>
+    let isWebSocketsUpgrade (lines: string array) =
+        Array.exists (fun (x:string) -> "upgrade: websocket" = x.ToLower()) lines
+
+    let getKey (key: string) arr =
+        try let f (s: String) = s.StartsWith(key)
+            (Array.find f arr).[key.Length + 1..]
+        with _ -> ""
+
+    let getLines (bytes: byte array) len =
+        if len > 8 then
+            bytes.[..(len - 9)]
+            |> UTF8Encoding.UTF8.GetString
+            |> fun hs -> hs.Split([| "\r\n" |],
+                   StringSplitOptions.RemoveEmptyEntries)
+        else
+            [||]
+        </code>
+        </figure>
+
+        <p>The RFC 6455 response feature is called handshake.
+           As far as I know, this functionality is not in the system namespaces..</p>
+
+        <figure>
+        <code>
+    let acceptString6455 acceptCode =
+        "HTTP/1.1 101 Switching Protocols\r\n" +
+        "Upgrade: websocket\r\n" +
+        "Connection: Upgrade\r\n" +
+        "Sec-WebSocket-Accept: " + acceptCode + "\r\n\r\n"
+
+    let handshake lines =
+        (getKey "Sec-WebSocket-Key:" lines) + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+        |> Encoding.ASCII.GetBytes
+        |> SHA1CryptoServiceProvider.Create().ComputeHash
+        |> Convert.ToBase64String
+        |> acceptString6455
+        |> Encoding.ASCII.GetBytes
+        </code>
+        </figure>
+
+<h4>Asynchronous Server Processes</h4>
+
+    <p>The first process, [start], is an entry point where three processes
+       start at once: the supervisor of all connections [Sup] process,
+       the connection listener server process [S], and, if the Server.ticker
+       flag is enabled, the heartbeat process, which works as an interval
+       cyclic timer [H]. The epilogue of the [start] process contains the
+       tokenization of the global token for all subprocesses when th
+        variable is released, which contains the websocket server in external code.</p>
+
+        <figure>
+        <code>
+    let start (addr: string) (port: int) =
+        let cts = new CancellationTokenSource()
+        let token = cts.Token
+        let sup = startSupervisor token
+        let listener = TcpListener(IPAddress.Parse(addr), port)
+
+        try
+            listener.Start(10)
+        with
+            | :? SocketException ->
+                failwithf "%s:%i is using by another program" addr port
+            | err ->
+                failwithf "%s" err.Message
+
+        Async.StartImmediate(listen listener token sup, token)
+        if ticker then Async.StartImmediate(heartbeat interval token sup, token)
+
+        { new IDisposable with
+            member x.Dispose() = cts.Cancel() }
+        </code>
+        </figure>
+
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+    <p></p>
+
+<h4>What's next?</h4>
+
+    <p>Then there are three phases:<br><br>
+
+1) Peer context: port, IP address, headers, endpoint, service information; <br>
+2) BERT serialization for compatibility with N2O client infrastructure; <br>
+3) Implementation of the NITRO protocol.</p>
+
+<h4>Acknowledgments</h4>
+
+    <p>I would like to thank everyone who liked our project,
+       especially Phillip Carter, software manager for .NET and
+       F# <span class="heart">❤</span> We are extremely excited!</p>
+
+<h4>Authors</h4>
+
+    <p>Maxim Sokhatsky, Igor Gorodetsky, Siegmentation Fault</p>
 
     <br/>
     <br/>
@@ -87,7 +353,7 @@
   </section>
 </article>
 </main>
-<footer>Made with <span class="heart">❤</span> to F#</footer>
+<footer>ERP.UNO</footer>
 <script>function drop(){document.getElementById("dropdown").classList.toggle("show");}</script>
 </body>
 </html>
