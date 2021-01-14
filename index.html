@@ -104,20 +104,20 @@
        of a web server for the F # language, I would highlight the following:
        1) the use of the System.Net.WebSockets system classes, which already
          provide a buffered encoder and decoder of frames of the RFC 6455 standard;
-       2) the server must be built on Async computer expressins;
-       3) MailboxProcessor should be used to manage asynchronous threads of execution,
+       2) the server must be built on Async computational expressions;
+       3) MailboxProcessor should be used to manage asynchronous threads of execution (lightweight processes),
           and not a self-written system of workers, which, although it will help
           squeeze the latter out of F # (I got 14 million messages per second),
-          will not demonstrate the essence, since it will be a deviation towards runtimes;
+          will not demonstrate the essence, since it will be a deviation towards actor runtimes;
        4) Using the TcpListener and TcpClient, NetworkStream classes. You are not allowed
           to use anything else!</p>
 
     <h4>What to read before writing?</h4>
 
     <p>After a bit of googling, I realized that the Internet lacks an article
-       that describes the history of the concept of asynchronous computation
-       and computational expressions, which are popularly known by the async/await
-       keywords. I see the future article called "Survey of brief Async history",
+       that describes the history of the concept of asynchronous computations
+       which are popularly known by the async/await keywords. I see the future
+       article called "Survey of brief Async history",
        which will show a retrospective of Async technology:
     </p>
 
