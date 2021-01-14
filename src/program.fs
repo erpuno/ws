@@ -9,13 +9,20 @@ module Program =
         let mutable port = 1900
         let mutable (cpu, io) = (4, 4)
         let mutable ret = 0
-        let echo = fun x -> x
+
+        let echoProto : Proto<Msg> =
+            { inh = Ok; proto = id }
+
+        let router (cx : Cx<Msg>) : Cx<Msg> =
+            { req = cx.req; ctx = fun msg -> Reply msg }
+
         try
             System.Threading.ThreadPool.GetMinThreads(&cpu, &io)
             printfn "N2O/F# WebSocket Server 1.0"
             printfn "[smp] [cpu:%i] [io:%i]" cpu io
             System.Threading.ThreadPool.SetMaxThreads(cpu, io) |> ignore
-            Stream.protocol <- echo
+
+            Stream.protocol <- mkHandler echoProto [router]
             use ws = Server.start "0.0.0.0" port
             System.Threading.Thread.Sleep -1
         with exn ->

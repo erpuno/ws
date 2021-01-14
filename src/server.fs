@@ -23,10 +23,9 @@ module Server =
                     let size = tcp.ReceiveBufferSize
                     let bytes = Array.create size (byte 0)
                     let! len = ns.ReadAsync(bytes, 0, bytes.Length) |> Async.AwaitTask
-                    let lines = getLines bytes len
 
                     try
-                        let req = Req.parse lines
+                        let req = Req.parse (getLines bytes len)
                         if isWebSocketsUpgrade req then
                             do! ns.AsyncWrite (handshake req)
                             let ws =
@@ -34,7 +33,7 @@ module Server =
                                     (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
                             sup.Post(Connect(inbox, ws))
                             if ticker then Async.StartImmediate(telemetry ws inbox ct sup, ct)
-                            return! looper ws size ct sup
+                            return! looper ws req size ct sup
                         else ()
                     finally tcp.Close ()
                 }),

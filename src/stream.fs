@@ -10,19 +10,27 @@ open System.Net.WebSockets
 [<AutoOpen>]
 module Stream =
 
-    let mutable protocol: Msg -> Msg = id
+    let mutable protocol: Req -> Msg -> Res = fun _ _ -> Ok
 
     let sendBytes (ws: WebSocket) ct bytes =
         ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
-        |> ignore
+        |> Async.AwaitTask
 
-    let send ws ct (msg: Msg) =
-        async {
-            match msg with
-            | Text text -> sendBytes ws ct (Encoding.UTF8.GetBytes text)
-            | Bin arr -> sendBytes ws ct arr
-            | Nope -> ()
-        }
+    let sendMsg ws ct (msg: Msg) = async {
+        match msg with
+        | Text text -> do! sendBytes ws ct (Encoding.UTF8.GetBytes text)
+        | Bin arr -> do! sendBytes ws ct arr
+        | Nope -> ()
+    }
+
+    let send (ws: WebSocket) ct (res: Res) = async {
+        match res with
+        | Error err -> do!
+            ws.CloseAsync(WebSocketCloseStatus.InternalServerError, err, ct)
+            |> Async.AwaitTask
+        | Reply msg -> do! sendMsg ws ct msg
+        | Ok -> ()
+    }
 
     let telemetry (ws: WebSocket) (inbox: MailboxProcessor<Msg>)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
@@ -30,7 +38,7 @@ module Stream =
             try
                 while not ct.IsCancellationRequested do
                     let! _ = inbox.Receive()
-                    do! send ws ct (Text "TICK")
+                    do! sendMsg ws ct (Text "TICK")
             finally
                 sup.Post(Disconnect <| inbox)
 
@@ -38,7 +46,7 @@ module Stream =
                 |> ignore
         }
 
-    let looper (ws: WebSocket) (bufferSize: int)
+    let looper (ws: WebSocket) (req: Req) (bufferSize: int)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
@@ -52,10 +60,10 @@ module Stream =
 
                     match (result.MessageType) with
                     | WebSocketMessageType.Text ->
-                        do! protocol (Text (Encoding.UTF8.GetString recv))
+                        do! protocol req (Text (Encoding.UTF8.GetString recv))
                             |> send ws ct
                     | WebSocketMessageType.Binary ->
-                        do! protocol (Bin recv)
+                        do! protocol req (Bin recv)
                             |> send ws ct
                     | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
