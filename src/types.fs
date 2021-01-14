@@ -34,4 +34,4 @@ module Types =
     type Router<'ev> = Req -> 'ev -> Res
 
     let mkHandler (proto : Proto<'ev>) router : Req -> Msg -> Res =
-        fun req msg -> (router req (proto msg))
+        fun req msg -> router req (proto msg)
