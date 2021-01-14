@@ -240,9 +240,9 @@
 
 <h4>RFC 6455 Handshake</h4>
 
-    <p>Functions for handling HTTP headers. isWebSocketsUpgrade looks
-       for an Upgrade and WebSocket pair in the headers . getLines returns
-       headers as an array of strings, and the getKey function returns the
+    <p>Functions for handling HTTP headers. <b>isWebSocketsUpgrade</b> looks
+       for an Upgrade and WebSocket pair in the headers. <b>getLines</b> returns
+       headers as an array of strings, and the <b>getKey</b> function returns the
        header value by its key.</p>
 
         <figure>
@@ -296,8 +296,8 @@
        the connection listener server process [S], and, if the Server.ticker
        flag is enabled, the heartbeat process, which works as an interval
        cyclic timer [H]. The epilogue of the [start] process contains the
-       tokenization of the global token for all subprocesses when th
-        variable is released, which contains the websocket server in external code.</p>
+       tokenization of the global token for all subprocesses when the
+       variable is released, which contains the websocket server in external code.</p>
 
         <figure>
         <code>
