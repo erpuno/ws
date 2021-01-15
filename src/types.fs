@@ -3,7 +3,7 @@ namespace N2O
 open System.Net.WebSockets
 open System.Collections.Specialized
 
-// Most minimal type system for F# WebSocket server infrastructure
+// The most minimal type system for WebSocket server infrastructure
 
 [<AutoOpen>]
 module Types =

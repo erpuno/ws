@@ -3,6 +3,8 @@ namespace N2O
 open System
 open System.Collections.Specialized
 
+// RFC 2616 HTTP headers
+
 module Req =
 
     let parse (lines : string array) : Req =

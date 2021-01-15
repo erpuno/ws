@@ -8,7 +8,7 @@ open System.Net.WebSockets
 open System.Text
 open System.Threading
 
-// Pure MailboxProcessor-based WebSocket Server
+// The 7 processes of pure MailboxProcessor-based WebSocket Server
 
 [<AutoOpen>]
 module Server =
