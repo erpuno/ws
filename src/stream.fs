@@ -7,10 +7,9 @@ open System.Net.WebSockets
 
 // MailboxProcessor-based Tick pusher and pure Async WebSocket looper
 
-[<AutoOpen>]
 module Stream =
 
-    let mutable protocol: Req -> Msg -> Res = fun _ _ -> Ok
+    let mutable protocol: Req -> Msg -> Msg = fun _ y -> y
 
     let sendBytes (ws: WebSocket) ct bytes =
         ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
@@ -21,15 +20,6 @@ module Stream =
         | Text text -> do! sendBytes ws ct (Encoding.UTF8.GetBytes text)
         | Bin arr -> do! sendBytes ws ct arr
         | Nope -> ()
-    }
-
-    let send (ws: WebSocket) ct (res: Res) = async {
-        match res with
-        | Error err -> do!
-            ws.CloseAsync(WebSocketCloseStatus.InternalServerError, err, ct)
-            |> Async.AwaitTask
-        | Reply msg -> do! sendMsg ws ct msg
-        | Ok -> ()
     }
 
     let telemetry (ws: WebSocket) (inbox: MailboxProcessor<Msg>)
@@ -61,10 +51,10 @@ module Stream =
                     match (result.MessageType) with
                     | WebSocketMessageType.Text ->
                         do! protocol req (Text (Encoding.UTF8.GetString recv))
-                            |> send ws ct
+                            |> sendMsg ws ct
                     | WebSocketMessageType.Binary ->
                         do! protocol req (Bin recv)
-                            |> send ws ct
+                            |> sendMsg ws ct
                     | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
             finally

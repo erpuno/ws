@@ -19,19 +19,8 @@ module Types =
         | Close of WebSocket
         | Tick
 
-    type Req = 
+    type Req =
         { path    : string;
           method  : string;
           version : string;
           headers : NameValueCollection }
-
-    type Res =
-        | Error of string
-        | Reply of Msg
-        | Ok
-
-    type Proto<'ev>  = Msg -> 'ev
-    type Router<'ev> = Req -> 'ev -> Res
-
-    let mkHandler (proto : Proto<'ev>) router : Req -> Msg -> Res =
-        fun req msg -> router req (proto msg)

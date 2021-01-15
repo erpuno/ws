@@ -13,9 +13,8 @@ module Req =
                 if idx > 0 then
                     match line.Split(':', 2, StringSplitOptions.TrimEntries) with
                     | [| key; value |] -> headers.Add(key.ToLower(), value)
-                    | _ -> ArgumentException (sprintf "Invalid Header: %s" line) |> raise
+                    | _ -> () |> ignore
                 else ()) lines
-
-            { path = uri; version = version; method = method;
-              headers = headers }
-        | _ -> raise (ArgumentException "Invalid Request-Line")
+            { path = uri; version = version; method = method; headers = headers }
+        | _ ->
+            { path = ""; version = ""; method = ""; headers = NameValueCollection() }

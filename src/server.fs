@@ -9,7 +9,6 @@ open System.Threading
 
 // Pure MailboxProcessor-based WebSocket Server
 
-[<AutoOpen>]
 module Server =
 
     let mutable interval = 5000
@@ -32,7 +31,7 @@ module Server =
                                 WebSocket.CreateFromStream(
                                     (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
                             sup.Post(Connect(inbox, ws))
-                            if ticker then Async.StartImmediate(telemetry ws inbox ct sup, ct)
+                            if ticker then Async.Start(telemetry ws inbox ct sup, ct)
                             return! looper ws req size ct sup
                         else ()
                     finally tcp.Close ()
