@@ -8,9 +8,6 @@ open System.Collections.Specialized
 [<AutoOpen>]
 module RFC2616 =
 
-    let ignoreHead (act : 'a -> unit) : int -> 'a -> unit =
-        fun idx x -> if idx > 0 then act x else ()
-
     let parseHeader (headers : NameValueCollection) (line : string) : unit =
         match line.Split(':', 2, StringSplitOptions.TrimEntries) with
         | [| key; value |] -> headers.Add(key.ToLower(), value)
@@ -21,6 +18,6 @@ module RFC2616 =
 
         match (Array.head lines).Split(' ', StringSplitOptions.RemoveEmptyEntries) with
         | [| method; uri; version |] ->
-            Array.iteri (ignoreHead <| parseHeader req.headers) lines
+            Array.iter (parseHeader req.headers) (Array.tail lines)
             { req with path = uri; version = version; method = method }
         | _ -> req
