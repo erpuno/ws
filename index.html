@@ -418,21 +418,21 @@
 
         <figure>
         <code>
-let telemetry (ws: WebSocket)
-              (inbox: MailboxProcessor&lt;Msg>)
-              (ct: CancellationToken)
-              (sup: MailboxProcessor&lt;Sup>) =
-    async {
-        try
-            while not ct.IsCancellationRequested do
-                let! _ = inbox.Receive()
-                do! send ws ct (Text "TICK")
-        finally
-            sup.Post(Disconnect &lt;| inbox)
+ let telemetry (ws: WebSocket)
+               (inbox: MailboxProcessor&lt;Msg>)
+               (ct: CancellationToken)
+               (sup: MailboxProcessor&lt;Sup>) =
+     async {
+         try
+             while not ct.IsCancellationRequested do
+                 let! _ = inbox.Receive()
+                 do! send ws ct (Text "TICK")
+         finally
+             sup.Post(Disconnect &lt;| inbox)
 
-            ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "TELEMETRY", ct)
-            |> ignore
-    }
+             ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "TELEMETRY", ct)
+             |> ignore
+     }
         </code>
         </figure>
 
@@ -445,35 +445,35 @@ let telemetry (ws: WebSocket)
 
         <figure>
         <code>
-let looper (ws: WebSocket)
-           (bufferSize: int)
-           (ct: CancellationToken)
-           (sup: MailboxProcessor&lt;Sup>) =
-    async {
-        try
-            let mutable bytes = Array.create bufferSize (byte 0)
-            while not ct.IsCancellationRequested do
-                let! result =
-                    ws.ReceiveAsync(ArraySegment&lt;byte>(bytes), ct)
-                    |> Async.AwaitTask
+ let looper (ws: WebSocket)
+            (bufferSize: int)
+            (ct: CancellationToken)
+            (sup: MailboxProcessor&lt;Sup>) =
+     async {
+         try
+             let mutable bytes = Array.create bufferSize (byte 0)
+             while not ct.IsCancellationRequested do
+                 let! result =
+                     ws.ReceiveAsync(ArraySegment&lt;byte>(bytes), ct)
+                     |> Async.AwaitTask
 
-                let recv = bytes.[0..result.Count - 1]
+                 let recv = bytes.[0..result.Count - 1]
 
-                match (result.MessageType) with
-                | WebSocketMessageType.Text ->
-                    do! protocol (Text (Encoding.UTF8.GetString recv))
-                        |> send ws ct
-                | WebSocketMessageType.Binary ->
-                    do! protocol (Bin recv)
-                        |> send ws ct
-                | WebSocketMessageType.Close -> ()
-                | _ -> printfn "PROTOCOL VIOLATION"
-        finally
-            sup.Post(Close &lt;| ws)
+                 match (result.MessageType) with
+                 | WebSocketMessageType.Text ->
+                     do! protocol (Text (Encoding.UTF8.GetString recv))
+                         |> send ws ct
+                 | WebSocketMessageType.Binary ->
+                     do! protocol (Bin recv)
+                         |> send ws ct
+                 | WebSocketMessageType.Close -> ()
+                 | _ -> printfn "PROTOCOL VIOLATION"
+         finally
+             sup.Post(Close &lt;| ws)
 
-            ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER", ct)
-            |> ignore
-    }
+             ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER", ct)
+             |> ignore
+     }
         </code>
         </figure>
 
@@ -483,17 +483,17 @@ let looper (ws: WebSocket)
 
         <figure>
         <code>
-let sendBytes (ws: WebSocket) ct bytes =
-    ws.SendAsync(ArraySegment&lt;byte>(bytes),
-        WebSocketMessageType.Binary, true, ct) |> ignore
+ let sendBytes (ws: WebSocket) ct bytes =
+     ws.SendAsync(ArraySegment&lt;byte>(bytes),
+         WebSocketMessageType.Binary, true, ct) |> ignore
 
-let send ws ct (msg: Msg) =
-    async {
-        match msg with
-        | Text text -> sendBytes ws ct (Encoding.UTF8.GetBytes text)
-        | Bin arr -> sendBytes ws ct arr
-        | Nope -> ()
-    }
+ let send ws ct (msg: Msg) =
+     async {
+         match msg with
+         | Text text -> sendBytes ws ct (Encoding.UTF8.GetBytes text)
+         | Bin arr -> sendBytes ws ct arr
+         | Nope -> ()
+     }
         </code>
         </figure>
 
