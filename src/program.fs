@@ -8,9 +8,9 @@ module Program =
         let mutable (cpu, io) = (4, 4)
         let mutable ret = 0
 
-        let nope : Msg -> Msg = fun _ -> Nope
-        let tick : Msg -> Msg = fun _ -> Text "TICK"
-        let echo : Msg -> Msg = id
+        let nope = fun _ -> Nope
+        let tick = fun _ -> Text "TICK"
+        let echo = id
         let router : Req -> Msg -> Msg =
             fun x ->
                 match x.path with
