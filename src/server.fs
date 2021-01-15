@@ -75,16 +75,11 @@ module Server =
         let sup = startSupervisor token
         let listener = TcpListener(IPAddress.Parse(addr), port)
 
-        try
-            listener.Start(10)
-        with
-            | :? SocketException ->
-                failwithf "%s:%i is using by another program" addr port
-            | err ->
-                failwithf "%s" err.Message
+        try listener.Start(10) with
+        | :? SocketException -> failwithf "%s:%i is acquired" addr port
+        | err -> failwithf "%s" err.Message
 
-        Async.StartImmediate(listen listener token sup, token)
-        if ticker then Async.StartImmediate(heartbeat interval token sup, token)
+        Async.Start(listen listener token sup, token)
+        if ticker then Async.Start(heartbeat interval token sup, token)
 
-        { new IDisposable with
-            member x.Dispose() = cts.Cancel() }
+        { new IDisposable with member x.Dispose() = cts.Cancel() }
