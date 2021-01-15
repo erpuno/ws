@@ -17,11 +17,10 @@ module RFC2616 =
         | _ -> ()
 
     let request (lines : string array) : Req =
-        let headers = NameValueCollection()
-        let req = { path = ""; version = ""; method = ""; headers = headers }
+        let req = { path = ""; version = ""; method = ""; headers = NameValueCollection() }
 
         match (Array.head lines).Split(' ', StringSplitOptions.RemoveEmptyEntries) with
         | [| method; uri; version |] ->
-            Array.iteri (ignoreHead <| parseHeader headers) lines
+            Array.iteri (ignoreHead <| parseHeader req.headers) lines
             { req with path = uri; version = version; method = method }
         | _ -> req
