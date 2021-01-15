@@ -170,16 +170,16 @@
 
     <p>For those familiar with the Erlang/OTP architecture,
        it is known that designing network applications begins
-       with a tree supervisor of lightweight processes and the
+       with a supervision tree of lightweight processes and the
        protocols that govern their interactions. Child
        processes usually share CancellationToken lifetime tokens,
        so that exceptions thrown in parent processes can cancel
-       the entire subprocess tree. Therefore, the process loops
-       contain the expression</p>
+       the entire subprocess tree. Therefore, the async process loops
+       contain the expression:</p>
 
         <figure>
         <code>
-    while not ct.IsCancellationRequested do
+ while not ct.IsCancellationRequested do
         </code>
         </figure>
 
