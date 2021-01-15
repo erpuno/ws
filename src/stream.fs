@@ -7,6 +7,7 @@ open System.Net.WebSockets
 
 // MailboxProcessor-based Tick pusher and pure Async WebSocket looper
 
+[<AutoOpen>]
 module Stream =
 
     let mutable protocol: Req -> Msg -> Msg = fun _ y -> y

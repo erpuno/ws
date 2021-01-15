@@ -7,6 +7,7 @@ open System.Security.Cryptography
 
 // RFC 6455 WebSocket handshake
 
+[<AutoOpen>]
 module RFC6455 =
 
     let isWebSocketsUpgrade (req: Req) =
