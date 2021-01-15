@@ -156,7 +156,7 @@
    let main _ =
        let mutable ret = 0
 
-       try Server.protocol &lt;- fun x -> x
+       try Server.proto &lt;- fun x -> x
            use ws = Server.start "0.0.0.0" 1900
            System.Threading.Thread.Sleep -1
        with exn ->
@@ -165,6 +165,7 @@
        ret
         </code>
         </figure>
+
 
 <h4>Asynchronous process architecture</h4>
 
@@ -234,9 +235,30 @@
      | Disconnect of MailboxProcessor&lt;Msg>
      | Close of WebSocket
      | Tick
+
+ type Req =
+     { path    : string;
+       method  : string;
+       version : string;
+       headers : NameValueCollection }
         </code>
         </figure>
 
+   <p>I state: for any WebSocket server the following signature is the only needed:</p>
+
+        <figure>
+        <code>
+ proto : Req -> Msg -> Msg
+        </code>
+        </figure>
+
+   <p>Also, no more types needed! What you have seen in most Haskell libraries
+      is the cannonical nonesense they produce both at work and in academia! The Req
+      record type is require in addition to Sup and Msg union types because:
+      a) we need to pass endpoint URL and probably peer IP address to WebSocket async processes;
+      b) we need to dispatch protocol modules (such as ECHO) through URL path;
+      c) we need to read <b>X-Authorization</b> token from RFC 2616 headers in production environment,
+         which is basically the whole Req parser that implemented in separete module.</p>
 
 <h4>RFC 6455 Handshake</h4>
 

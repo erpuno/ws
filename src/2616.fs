@@ -5,9 +5,10 @@ open System.Collections.Specialized
 
 // RFC 2616 HTTP headers
 
-module Req =
+[<AutoOpen>]
+module RFC2616 =
 
-    let parse (lines : string array) : Req =
+    let request (lines : string array) : Req =
         match (Array.head lines).Split(' ', StringSplitOptions.RemoveEmptyEntries) with
         | [| method; uri; version |] ->
             let headers = NameValueCollection()

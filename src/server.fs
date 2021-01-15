@@ -80,9 +80,9 @@ module Server =
                     let! len = ns.ReadAsync(bytes, 0, bytes.Length) |> Async.AwaitTask
 
                     try
-                        let req = Req.parse (getLines bytes len)
+                        let req = request <| getLines bytes len
                         if isWebSocketsUpgrade req then
-                            do! ns.AsyncWrite (handshake req)
+                            do! ns.AsyncWrite <| handshake req
                             let ws =
                                 WebSocket.CreateFromStream(
                                     (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
