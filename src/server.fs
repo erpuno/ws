@@ -15,7 +15,7 @@ module Server =
 
     let mutable interval = 5000 // ticker interval
     let mutable ticker = true // enable server-initiated Tick messages
-    let mutable proto : Req -> Msg -> Msg = fun _ y -> y // choose protocol by Req
+    let mutable proto : Req -> Msg -> Msg = fun _ _ -> Nope // choose protocol by Req
 
     let sendBytes (ws: WebSocket) ct bytes =
         ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
@@ -54,7 +54,7 @@ module Server =
 
                     let recv = bytes.[0..result.Count - 1]
 
-                    match (result.MessageType) with
+                    match result.MessageType with
                     | WebSocketMessageType.Text ->
                         do! proto req (Text (Encoding.UTF8.GetString recv))
                             |> sendMsg ws ct

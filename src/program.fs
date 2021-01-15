@@ -11,13 +11,12 @@ module Program =
         let nope = fun _ -> Nope
         let tick = fun _ -> Text "TICK"
         let echo = id
-        let router : Req -> Msg -> Msg =
-            fun x ->
-                match x.path with
-                | "/nope" -> nope
-                | "/tick" -> tick
-                | "/echo" -> echo
-                | _ -> id
+        let router (req : Req) : Msg -> Msg =
+            match req.path with
+            | "/nope" -> nope
+            | "/tick" -> tick
+            | "/echo" -> echo
+            | _ -> id
 
         try
             System.Threading.ThreadPool.GetMinThreads(&cpu, &io)
