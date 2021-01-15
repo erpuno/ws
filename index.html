@@ -156,7 +156,7 @@
    let main _ =
        let mutable ret = 0
 
-       try Server.proto &lt;- fun x -> x
+       try Server.proto &lt;- fun _ -> id
            use ws = Server.start "0.0.0.0" 1900
            System.Threading.Thread.Sleep -1
        with exn ->
@@ -252,13 +252,38 @@
         </code>
         </figure>
 
-   <p>Also, no more types needed! What you have seen in most Haskell libraries
-      is the cannonical nonesense they produce both at work and in academia! The Req
-      record type is require in addition to Sup and Msg union types because:
+   <p>Also, no more types needed! The Req record type is required in addition to Sup and Msg union types because:
       a) we need to pass endpoint URL and probably peer IP address to WebSocket async processes;
       b) we need to dispatch protocol modules (such as ECHO) through URL path;
       c) we need to read <b>X-Authorization</b> token from RFC 2616 headers in production environment,
-         which is basically the whole Req parser that implemented in separete module.</p>
+         which is basically the whole request parser, implemented in separete module.</p>
+
+   <p>Thus our ECHO protocol function including router could be seen as:</p>
+
+        <figure>
+        <code>
+ let echo : Req -> Msg -> Msg =
+     fun _ -> id
+        </code>
+        </figure>
+
+   <p>In pure functional manner you can build even complex router which maps
+      URI services to particular monoidal functions:</p>
+
+        <figure>
+        <code>
+ let nope  : Msg -> Msg = fun _ -> Nope
+ let tick  : Msg -> Msg = fun _ -> Text "TICK"
+ let echo  : Msg -> Msg = id
+ let route : Req -> Msg -> Msg =
+     fun x ->
+         match x.path with
+         | "/nope" -> nope
+         | "/tick" -> tick
+         | "/echo" -> echo
+         | _ -> id
+        </code>
+        </figure>
 
 <h4>RFC 6455 Handshake</h4>
 
@@ -520,11 +545,10 @@
 
 <h4>What's next?</h4>
 
-    <p>Then there are three phases:<br><br>
+    <p>Then there are next phases:<br><br>
 
-1) Peer context: port, IP address, headers, endpoint, service information; <br>
-2) BERT serialization for compatibility with N2O client infrastructure; <br>
-3) Implementation of the NITRO protocol.</p>
+1) BERT serialization for compatibility with N2O client infrastructure; <br>
+2) Implementation of the NITRO protocol.</p>
 
 <h4>Acknowledgments</h4>
 

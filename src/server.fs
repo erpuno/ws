@@ -15,7 +15,7 @@ module Server =
 
     let mutable interval = 5000 // ticker interval
     let mutable ticker = true // enable server-initiated Tick messages
-    let mutable protocol: Req -> Msg -> Msg = fun _ y -> y // choose protocol by Req
+    let mutable proto : Req -> Msg -> Msg = fun _ y -> y // choose protocol by Req
 
     let sendBytes (ws: WebSocket) ct bytes =
         ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
@@ -56,10 +56,10 @@ module Server =
 
                     match (result.MessageType) with
                     | WebSocketMessageType.Text ->
-                        do! protocol req (Text (Encoding.UTF8.GetString recv))
+                        do! proto req (Text (Encoding.UTF8.GetString recv))
                             |> sendMsg ws ct
                     | WebSocketMessageType.Binary ->
-                        do! protocol req (Bin recv)
+                        do! proto req (Bin recv)
                             |> sendMsg ws ct
                     | WebSocketMessageType.Close -> ()
                     | _ -> printfn "PROTOCOL VIOLATION"
