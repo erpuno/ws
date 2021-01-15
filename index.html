@@ -326,16 +326,20 @@
 
         <figure>
         <code>
- let listen (listener: TcpListener)
-            (ct: CancellationToken)
-            (sup: MailboxProcessor&lt;Sup>) =
-     async {
-         while not ct.IsCancellationRequested do
-             let! client = listener.AcceptTcpClientAsync() |> Async.AwaitTask
-
-             client.NoDelay &lt;- true
-             startClient client sup ct |> ignore
-     }
+ let startSupervisor (ct: CancellationToken) =
+     MailboxProcessor.Start(
+         (fun (inbox: MailboxProcessor&lt;Sup>) ->
+             let listeners = ResizeArray&lt;_>()
+             async {
+                 while not ct.IsCancellationRequested do
+                     match! inbox.Receive() with
+                     | Close ws -> ()
+                     | Connect (l, ns) -> listeners.Add(l)
+                     | Disconnect l -> listeners.Remove(l) |> ignore
+                     | Tick -> listeners.ForEach(fun l -> l.Post Nope)
+             }),
+         cancellationToken = ct
+     )
         </code>
         </figure>
 
