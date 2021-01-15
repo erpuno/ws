@@ -6,7 +6,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <UseAppHost>true</UseAppHost>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <IncludeSource>true</IncludeSource>
     <PackageTags>WebSockets;Async;MailboxProcessor</PackageTags>
     <PackageDescription>F# WebSocket Server</PackageDescription>
