@@ -148,21 +148,21 @@
 
         <figure>
         <code>
-  open N2O
+ open N2O
 
-  module Program =
+ module Program =
 
-    [&lt;EntryPoint>]
-    let main _ =
-        let mutable ret = 0
+   [&lt;EntryPoint>]
+   let main _ =
+       let mutable ret = 0
 
-        try Stream.protocol &lt;- fun x -> x
-            use ws = Server.start "0.0.0.0" 1900
-            System.Threading.Thread.Sleep -1
-        with exn ->
-            printfn "EXIT: %s" exn.Message
-            ret &lt;- 1
-        ret
+       try Stream.protocol &lt;- fun x -> x
+           use ws = Server.start "0.0.0.0" 1900
+           System.Threading.Thread.Sleep -1
+       with exn ->
+           printfn "EXIT: %s" exn.Message
+           ret &lt;- 1
+       ret
         </code>
         </figure>
 
@@ -224,16 +224,16 @@
 
         <figure>
         <code>
-    type Msg =
-        | Bin of byte array
-        | Text of string
-        | Nope
+ type Msg =
+     | Bin of byte array
+     | Text of string
+     | Nope
 
-    type Sup =
-        | Connect of MailboxProcessor&lt;Msg> * WebSocket
-        | Disconnect of MailboxProcessor&lt;Msg>
-        | Close of WebSocket
-        | Tick
+ type Sup =
+     | Connect of MailboxProcessor&lt;Msg> * WebSocket
+     | Disconnect of MailboxProcessor&lt;Msg>
+     | Close of WebSocket
+     | Tick
         </code>
         </figure>
 
@@ -247,23 +247,23 @@
 
         <figure>
         <code>
-    let isWebSocketsUpgrade (lines: string array) =
-        Array.exists (fun (x:string) ->
-            "upgrade: websocket" = x.ToLower()) lines
+ let isWebSocketsUpgrade (lines: string array) =
+     Array.exists (fun (x:string) ->
+         "upgrade: websocket" = x.ToLower()) lines
 
-    let getKey (key: string) arr =
-        try let f (s: String) = s.StartsWith(key)
-            (Array.find f arr).[key.Length + 1..]
-        with _ -> ""
+ let getKey (key: string) arr =
+     try let f (s: String) = s.StartsWith(key)
+         (Array.find f arr).[key.Length + 1..]
+     with _ -> ""
 
-    let getLines (bytes: byte array) len =
-        if len > 8 then
-            bytes.[..(len - 9)]
-            |> UTF8Encoding.UTF8.GetString
-            |> fun hs -> hs.Split([| "\r\n" |],
-                   StringSplitOptions.RemoveEmptyEntries)
-        else
-            [||]
+ let getLines (bytes: byte array) len =
+     if len > 8 then
+         bytes.[..(len - 9)]
+         |> UTF8Encoding.UTF8.GetString
+         |> fun hs -> hs.Split([| "\r\n" |],
+                StringSplitOptions.RemoveEmptyEntries)
+     else
+ \        [||]
         </code>
         </figure>
 
@@ -272,20 +272,20 @@
 
         <figure>
         <code>
-    let acceptString6455 acceptCode =
-        "HTTP/1.1 101 Switching Protocols\r\n" +
-        "Upgrade: websocket\r\n" +
-        "Connection: Upgrade\r\n" +
-        "Sec-WebSocket-Accept: " + acceptCode + "\r\n\r\n"
+ let acceptString6455 acceptCode =
+     "HTTP/1.1 101 Switching Protocols\r\n" +
+     "Upgrade: websocket\r\n" +
+     "Connection: Upgrade\r\n" +
+     "Sec-WebSocket-Accept: " + acceptCode + "\r\n\r\n"
 
-    let handshake lines =
-        (getKey "Sec-WebSocket-Key:" lines)
-           + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-        |> Encoding.ASCII.GetBytes
-        |> SHA1CryptoServiceProvider.Create().ComputeHash
-        |> Convert.ToBase64String
-        |> acceptString6455
-        |> Encoding.ASCII.GetBytes
+ let handshake lines =
+     (getKey "Sec-WebSocket-Key:" lines)
+        + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+     |> Encoding.ASCII.GetBytes
+     |> SHA1CryptoServiceProvider.Create().ComputeHash
+     |> Convert.ToBase64String
+     |> acceptString6455
+     |> Encoding.ASCII.GetBytes
         </code>
         </figure>
 
@@ -323,13 +323,179 @@
         </code>
         </figure>
 
-    <p></p>
-    <p></p>
-    <p></p>
-    <p></p>
-    <p></p>
-    <p></p>
-    <p></p>
+    <p>The second process [Sup], the supervisor, is a pure function that processes
+       messages from protocol supervisors about registration and death of the connections.
+       There is also a broadcast of messages as a reaction to the heartbeat of the ticker.</p>
+
+        <figure>
+        <code>
+ let listen (listener: TcpListener)
+            (ct: CancellationToken)
+            (sup: MailboxProcessor&lt;Sup>) =
+     async {
+         while not ct.IsCancellationRequested do
+             let! client = listener.AcceptTcpClientAsync() |> Async.AwaitTask
+
+             client.NoDelay &lt;- true
+             startClient client sup ct |> ignore
+     }
+        </code>
+        </figure>
+
+    <p>Interval heartbeat timer [H].</p>
+
+        <figure>
+        <code>
+ let heartbeat (interval: int)
+               (ct: CancellationToken)
+               (sup: MailboxProcessor&lt;Sup>) =
+     async {
+         while not ct.IsCancellationRequested do
+             do! Async.Sleep interval
+             sup.Post(Tick)
+     }
+        </code>
+        </figure>
+
+    <p>The main loop of the process [S], which accepts new TCP connections and starts new clients [C].</p>
+
+        <figure>
+        <code>
+ let listen (listener: TcpListener)
+            (ct: CancellationToken)
+            (sup: MailboxProcessor&lt;Sup>) =
+     async {
+         while not ct.IsCancellationRequested do
+             let! client = listener.AcceptTcpClientAsync() |> Async.AwaitTask
+
+             client.NoDelay &lt;- true
+             startClient client sup ct |> ignore
+     }
+       </code>
+        </figure>
+
+    <p>Asychronous process [C] with a queue (MailboxProcessor) for processing TCP connections or,
+       more simply, a TCP client. This is the entry point for the client connection,
+       and this is where the handshake happens. In case of a successful handshake,
+       we send RFC 6455 a response and launch two asynchronous processes at once:
+       the first is the processing cycle of the websocket messages [L] itself, and also,
+       if the Server.ticker flag is set, we start the telemetry process [T], which shares
+       the WebSocket stream and can perform asynchronous message flushing there,
+       competing with the main loop [L]. Such processes always exist in pairs.</p>
+
+        <figure>
+        <code>
+ let startClient (tcp: TcpClient)
+                 (sup: MailboxProcessor&lt;Sup>)
+                 (ct: CancellationToken) =
+     MailboxProcessor.Start(
+         (fun (inbox: MailboxProcessor&lt;Msg>) ->
+             async {
+                 let ns    = tcp.GetStream()
+                 let size  = tcp.ReceiveBufferSize
+                 let bytes = Array.create size (byte 0)
+                 let! len  = ns.ReadAsync(bytes, 0, bytes.Length)
+                             |> Async.AwaitTask
+                 let lines = getLines bytes len
+                 match isWebSocketsUpgrade lines with
+                 | true ->
+                     do! ns.AsyncWrite (handshake lines)
+                     let ws =
+                         WebSocket.CreateFromStream(
+                             (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
+                     sup.Post(Connect(inbox, ws))
+                     if ticker then Async.Start(telemetry ws inbox ct sup, ct)
+                     return! looper ws size ct sup
+                 | _ -> tcp.Close()
+             }),
+         cancellationToken = ct
+     )
+        </code>
+        </figure>
+
+    <p>The telemetry process [T] listens to the queue, and for any message, sends the
+       text "TICK" to the websocket channel.</p>
+
+        <figure>
+        <code>
+let telemetry (ws: WebSocket)
+              (inbox: MailboxProcessor&lt;Msg>)
+              (ct: CancellationToken)
+              (sup: MailboxProcessor&lt;Sup>) =
+    async {
+        try
+            while not ct.IsCancellationRequested do
+                let! _ = inbox.Receive()
+                do! send ws ct (Text "TICK")
+        finally
+            sup.Post(Disconnect &lt;| inbox)
+
+            ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "TELEMETRY", ct)
+            |> ignore
+    }
+        </code>
+        </figure>
+
+    <p>The main message loop [L], in which a buffered WebSocket stream is created,
+       the type of which is explicitly present in the supervisor protocol.
+       Also, a global buffer for the entire cycle is allocated here, where the bytes
+       of their socket are copied using ReceiveAsync. When an exception occurs,
+       the supervisor is notified with a Close message, which signals a disconnection,
+       for example, in the event of a UTF-8 validation error.</p>
+
+        <figure>
+        <code>
+let looper (ws: WebSocket)
+           (bufferSize: int)
+           (ct: CancellationToken)
+           (sup: MailboxProcessor&lt;Sup>) =
+    async {
+        try
+            let mutable bytes = Array.create bufferSize (byte 0)
+            while not ct.IsCancellationRequested do
+                let! result =
+                    ws.ReceiveAsync(ArraySegment&lt;byte>(bytes), ct)
+                    |> Async.AwaitTask
+
+                let recv = bytes.[0..result.Count - 1]
+
+                match (result.MessageType) with
+                | WebSocketMessageType.Text ->
+                    do! protocol (Text (Encoding.UTF8.GetString recv))
+                        |> send ws ct
+                | WebSocketMessageType.Binary ->
+                    do! protocol (Bin recv)
+                        |> send ws ct
+                | WebSocketMessageType.Close -> ()
+                | _ -> printfn "PROTOCOL VIOLATION"
+        finally
+            sup.Post(Close &lt;| ws)
+
+            ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER", ct)
+            |> ignore
+    }
+        </code>
+        </figure>
+
+    <p>Channel termination functions inherit the archaic, in my opinion,
+       separation of text and binary messages. As practice shows, treating
+       everything as binary messages only improves the semantics of the protocol.</p>
+
+        <figure>
+        <code>
+let sendBytes (ws: WebSocket) ct bytes =
+    ws.SendAsync(ArraySegment&lt;byte>(bytes),
+        WebSocketMessageType.Binary, true, ct) |> ignore
+
+let send ws ct (msg: Msg) =
+    async {
+        match msg with
+        | Text text -> sendBytes ws ct (Encoding.UTF8.GetBytes text)
+        | Bin arr -> sendBytes ws ct arr
+        | Nope -> ()
+    }
+        </code>
+        </figure>
 
 <h4>What's next?</h4>
 
