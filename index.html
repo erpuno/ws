@@ -156,7 +156,7 @@
    let main _ =
        let mutable ret = 0
 
-       try Stream.protocol &lt;- fun x -> x
+       try Server.protocol &lt;- fun x -> x
            use ws = Server.start "0.0.0.0" 1900
            System.Threading.Thread.Sleep -1
        with exn ->
@@ -210,7 +210,7 @@
     <p>At the moment of birth of the client [C], in the parent process of
        the server [S], the notification [S] -> [Sup] takes place according
        to the so-called Supervisor Sup protocol with the same type.
-       The public protocol of the public function Stream.protocol is
+       The public protocol of the public function Server.protocol is
        represented by the Msg type , which is used to control an asynchronous process [L].</p>
 
     <p>The server ping system is implemented compatible with the Sup

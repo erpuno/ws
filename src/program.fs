@@ -1,7 +1,5 @@
 open N2O
 
-// Echo sample
-
 module Program =
 
     [<EntryPoint>]
@@ -18,7 +16,7 @@ module Program =
             printfn "[smp] [cpu:%i] [io:%i]" cpu io
             System.Threading.ThreadPool.SetMaxThreads(cpu, io) |> ignore
 
-            Stream.protocol <- echo
+            Server.protocol <- echo
             use ws = Server.start "0.0.0.0" port
             System.Threading.Thread.Sleep -1
         with exn ->
