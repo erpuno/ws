@@ -13,7 +13,7 @@ module Req =
                 if idx > 0 then
                     match line.Split(':', 2, StringSplitOptions.TrimEntries) with
                     | [| key; value |] -> headers.Add(key.ToLower(), value)
-                    | _ -> () |> ignore
+                    | _ -> ()
                 else ()) lines
             { path = uri; version = version; method = method; headers = headers }
         | _ ->
