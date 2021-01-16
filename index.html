@@ -286,7 +286,30 @@
         </code>
         </figure>
 
-<h4>RFC 6455 Handshake</h4>
+    <h4>RFC 2616 Header Parser</h4>
+
+        <p>Simple header <b>request</b> parser function
+           is a prelude for RFC 6455 handshake. This function populates
+           NameValueCollection with parsed headers from the initial HTTP request.</p>
+
+        <figure>
+        <code>
+    let parseHeader (headers : NameValueCollection) (line : string) : unit =
+        match line.Split(':', 2, StringSplitOptions.TrimEntries) with
+        | [| key; value |] -> headers.Add(key.ToLower(), value)
+        | _ -> ()
+
+    let request (lines : string array) : Req =
+        let req = { path = ""; version = ""; method = ""; headers = NameValueCollection() }
+        match (Array.head lines).Split(' ', StringSplitOptions.RemoveEmptyEntries) with
+        | [| method; uri; version |] ->
+            Array.iter (parseHeader req.headers) (Array.tail lines)
+            { req with path = uri; version = version; method = method }
+        | _ -> req
+        </code>
+        </figure>
+
+    <h4>RFC 6455 Handshake</h4>
 
     <p>Functions for handling HTTP headers. <b>isWebSocketsUpgrade</b> looks
        for an Upgrade and WebSocket pair in the headers. <b>getLines</b> returns
@@ -295,21 +318,15 @@
 
         <figure>
         <code>
- let isWebSocketsUpgrade (lines: string array) =
-     Array.exists (fun (x:string) ->
-         "upgrade: websocket" = x.ToLower()) lines
+ let isWebSocketsUpgrade (req: Req) =
+     req.headers.["upgrade"].ToLower() = "websocket"
 
- let getKey (key: string) arr =
-     try let f (s: String) = s.StartsWith(key)
-         (Array.find f arr).[key.Length + 1..]
-     with _ -> ""
-
- let getLines (bytes: byte array) len =
+ let getLines (bytes: Byte []) len =
      if len > 8 then
          bytes.[..(len - 9)]
          |> UTF8Encoding.UTF8.GetString
          |> fun hs -> hs.Split([| "\r\n" |],
-                StringSplitOptions.RemoveEmptyEntries)
+            StringSplitOptions.RemoveEmptyEntries)
      else
          [||]
         </code>
@@ -327,8 +344,7 @@
      "Sec-WebSocket-Accept: " + acceptCode + "\r\n\r\n"
 
  let handshake lines =
-     (getKey "Sec-WebSocket-Key:" lines)
-        + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+     req.headers.["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
      |> Encoding.ASCII.GetBytes
      |> SHA1CryptoServiceProvider.Create().ComputeHash
      |> Convert.ToBase64String
