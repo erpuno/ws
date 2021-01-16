@@ -294,18 +294,21 @@
 
         <figure>
         <code>
-    let parseHeader (headers : NameValueCollection) (line : string) : unit =
-        match line.Split(':', 2, StringSplitOptions.TrimEntries) with
-        | [| key; value |] -> headers.Add(key.ToLower(), value)
-        | _ -> ()
+ let parseHeader (headers : NameValueCollection) (line : string) : unit =
+     match line.Split(':', 2, StringSplitOptions.TrimEntries) with
+     | [| key; value |] -> headers.Add(key.ToLower(), value)
+     | _ -> ()
 
-    let request (lines : string array) : Req =
-        let req = { path = ""; version = ""; method = ""; headers = NameValueCollection() }
-        match (Array.head lines).Split(' ', StringSplitOptions.RemoveEmptyEntries) with
-        | [| method; uri; version |] ->
-            Array.iter (parseHeader req.headers) (Array.tail lines)
-            { req with path = uri; version = version; method = method }
-        | _ -> req
+ let request (lines : string array) : Req =
+     let req = { path = ""; version = ""; method = "";
+                 headers = NameValueCollection() }
+
+     match (Array.head lines).Split(' ',
+        StringSplitOptions.RemoveEmptyEntries) with
+     | [| method; uri; version |] ->
+         Array.iter (parseHeader req.headers) (Array.tail lines)
+         { req with path = uri; version = version; method = method }
+     | _ -> req
         </code>
         </figure>
 
