@@ -15,7 +15,7 @@ module RFC6455 =
 
     let getLines (bytes: Byte []) len =
         if len > 8 then
-            bytes.[..(len - 9)]
+            bytes.[..(len)]
             |> UTF8Encoding.UTF8.GetString
             |> fun hs -> hs.Split([| "\r\n" |], StringSplitOptions.RemoveEmptyEntries)
         else
