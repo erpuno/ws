@@ -1,6 +1,6 @@
 namespace N2O
 
-open System.Net.WebSockets
+open System.Net.Sockets
 open System.Collections.Specialized
 
 // The most minimal type system for WebSocket server infrastructure
@@ -14,9 +14,9 @@ module Types =
         | Nope
 
     type Sup =
-        | Connect of MailboxProcessor<Msg> * WebSocket
+        | Connect of MailboxProcessor<Msg> * NetworkStream
         | Disconnect of MailboxProcessor<Msg>
-        | Close of WebSocket
+        | Close of NetworkStream
         | Tick
 
     type Req =

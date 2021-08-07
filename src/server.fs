@@ -4,7 +4,6 @@ open System
 open System.IO
 open System.Net
 open System.Net.Sockets
-open System.Net.WebSockets
 open System.Text
 open System.Threading
 
@@ -17,57 +16,44 @@ module Server =
     let mutable ticker = true // enable server-initiated Tick messages
     let mutable proto : Req -> Msg -> Msg = fun _ _ -> Nope // choose protocol by Req
 
-    let sendBytes (ws: WebSocket) ct bytes =
-        ws.SendAsync(ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, ct)
-        |> Async.AwaitTask
+    let sendBytes (ns: NetworkStream) bytes =
+        ns.AsyncWrite (encodeFrame (BinaryFrame, bytes, true, None))
 
-    let sendMsg ws ct (msg: Msg) = async {
+    let sendMsg ns (msg: Msg) = async {
         match msg with
-        | Text text -> do! sendBytes ws ct (Encoding.UTF8.GetBytes text)
-        | Bin arr -> do! sendBytes ws ct arr
-        | Nope -> ()
+        | Text text -> do! sendBytes ns (Encoding.UTF8.GetBytes text)
+        | Bin arr   -> do! sendBytes ns arr
+        | Nope      -> ()
     }
 
-    let telemetry (ws: WebSocket) (inbox: MailboxProcessor<Msg>)
+    let telemetry (ns: NetworkStream) (inbox: MailboxProcessor<Msg>)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
                 while not ct.IsCancellationRequested do
                     let! _ = inbox.Receive()
-                    do! sendMsg ws ct (Text "TICK")
+                    do! sendMsg ns (Text "TICK")
             finally
                 sup.Post(Disconnect <| inbox)
-
-                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "TELEMETRY", ct)
-                |> ignore
+                ns.Close () |> ignore
         }
 
-    let looper (ws: WebSocket) (req: Req) (bufferSize: int)
+    let looper (ns: NetworkStream) (req: Req) (bufferSize: int)
         (ct: CancellationToken) (sup: MailboxProcessor<Sup>) =
         async {
             try
-                let mutable bytes = Array.create bufferSize (byte 0)
                 while not ct.IsCancellationRequested do
-                    let! result =
-                        ws.ReceiveAsync(ArraySegment<byte>(bytes), ct)
-                        |> Async.AwaitTask
-
-                    let recv = bytes.[0..result.Count - 1]
-
-                    match result.MessageType with
-                    | WebSocketMessageType.Text ->
+                    match! decodeFrame(ns) with
+                    | (TextFrame, recv, true) ->
                         do! proto req (Text (Encoding.UTF8.GetString recv))
-                            |> sendMsg ws ct
-                    | WebSocketMessageType.Binary ->
+                            |> sendMsg ns
+                    | (BinaryFrame, recv, true) ->
                         do! proto req (Bin recv)
-                            |> sendMsg ws ct
-                    | WebSocketMessageType.Close -> ()
-                    | _ -> printfn "PROTOCOL VIOLATION"
+                            |> sendMsg ns
+                    | _ -> ()
             finally
-                sup.Post(Close <| ws)
-
-                ws.CloseAsync(WebSocketCloseStatus.PolicyViolation, "LOOPER", ct)
-                |> ignore
+                sup.Post(Close ns)
+                ns.Close() |> ignore
         }
 
     let startClient (tcp: TcpClient) (sup: MailboxProcessor<Sup>) (ct: CancellationToken) =
@@ -79,18 +65,22 @@ module Server =
                     let bytes = Array.create size (byte 0)
                     let! len = ns.ReadAsync(bytes, 0, bytes.Length) |> Async.AwaitTask
 
+                    let cts = new CancellationTokenSource ()
+                    ct.Register (fun () -> cts.Cancel ()) |> ignore
+                    let token = cts.Token
+
                     try
                         let req = request <| getLines bytes len
                         if isWebSocketsUpgrade req then
                             do! ns.AsyncWrite <| handshake req
-                            let ws =
-                                WebSocket.CreateFromStream(
-                                    (ns :> Stream), true, "n2o", TimeSpan(1, 0, 0))
-                            sup.Post(Connect(inbox, ws))
-                            if ticker then Async.Start(telemetry ws inbox ct sup, ct)
-                            return! looper ws req size ct sup
+                            sup.Post(Connect(inbox, ns))
+
+                            if ticker then Async.Start(telemetry ns inbox token sup, token)
+                            return! looper ns req size token sup
                         else ()
-                    finally tcp.Close ()
+                    finally
+                        cts.Cancel ()
+                        tcp.Close ()
                 }),
             cancellationToken = ct
         )
