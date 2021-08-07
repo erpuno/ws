@@ -9,8 +9,8 @@ open System.Collections.Specialized
 module RFC2616 =
 
     let parseHeader (headers : NameValueCollection) (line : string) : unit =
-        match line.Split(':', 2, StringSplitOptions.TrimEntries) with
-        | [| key; value |] -> headers.Add(key.ToLower(), value)
+        match line.Split(':', 2) with
+        | [| key; value |] -> headers.Add(key.ToLower().Trim(), value.Trim())
         | _ -> ()
 
     let request (lines : string array) : Req =
