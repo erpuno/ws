@@ -105,6 +105,7 @@ module Server =
             (fun (inbox: MailboxProcessor<Sup>) ->
                 let listeners = ResizeArray<_>()
                 async {
+                    printfn "Веб-сокет сервер ДП «IНФОТЕХ» для .NET Framework 4.7.2"
                     while not ct.IsCancellationRequested do
                         match! inbox.Receive() with
                         | Close ws -> ()
@@ -121,10 +122,8 @@ module Server =
         let sup = startSupervisor token
         let listener = TcpListener(IPAddress.Parse(addr), port)
 
-        try listener.Start(10) with
-        | :? SocketException -> failwithf "%s:%i is acquired" addr port
-        | err -> failwithf "%s" err.Message
-
+        // starters
+        try listener.Start(10) with | err -> printfn "%s" err.Message ; Environment.Exit(0)
         Async.Start(listen listener token sup, token)
         if ticker then Async.Start(heartbeat interval token sup, token)
 

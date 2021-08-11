@@ -20,7 +20,6 @@ module Program =
 
         try
             System.Threading.ThreadPool.GetMinThreads(&cpu, &io)
-            printfn "N2O/F# WebSocket Server 1.0"
             printfn "[smp] [cpu:%i] [io:%i]" cpu io
             System.Threading.ThreadPool.SetMaxThreads(cpu, io) |> ignore
 
