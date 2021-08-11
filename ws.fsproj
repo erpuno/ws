@@ -4,9 +4,9 @@
     <Authors>Namdak Tonpa;Igor Gorodetsky;Siegmentation Fault</Authors>
     <Company>INFOTECH SE</Company>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>net462</TargetFramework>
     <UseAppHost>true</UseAppHost>
-    <Version>1.0.14</Version>
+    <Version>1.0.15</Version>
     <IncludeSource>true</IncludeSource>
     <PackageTags>WebSockets;Async;MailboxProcessor</PackageTags>
     <PackageDescription>F# WebSocket Server</PackageDescription>
