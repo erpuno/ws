@@ -105,7 +105,7 @@ module Server =
             (fun (inbox: MailboxProcessor<Sup>) ->
                 let listeners = ResizeArray<_>()
                 async {
-                    printfn "Веб-сокет сервер ДП «IНФОТЕХ» для .NET Framework 4.7.2"
+                    printfn "Веб-сокет сервер ДП «IНФОТЕХ» для .NET Framework 4.6.2"
                     while not ct.IsCancellationRequested do
                         match! inbox.Receive() with
                         | Close ws -> ()

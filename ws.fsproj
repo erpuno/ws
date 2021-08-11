@@ -6,7 +6,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net462</TargetFramework>
     <UseAppHost>true</UseAppHost>
-    <Version>1.0.15</Version>
+    <Version>1.0.16</Version>
     <IncludeSource>true</IncludeSource>
     <PackageTags>WebSockets;Async;MailboxProcessor</PackageTags>
     <PackageDescription>F# WebSocket Server</PackageDescription>
